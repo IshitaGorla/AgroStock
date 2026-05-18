@@ -3,23 +3,26 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { TollStoreProvider } from '@/components/agro/toll-store';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-// Removed unstable_settings so Expo correctly loads index.tsx at the root
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="sign-up" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <TollStoreProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="sign-in" />
+          <Stack.Screen name="sign-up" />
+          <Stack.Screen name="toll-entry" />
+          <Stack.Screen name="vehicle-entry" />
+          <Stack.Screen name="vehicle-exit" />
+          <Stack.Screen name="entries" />
+        </Stack>
+        <StatusBar style="auto" />
+      </TollStoreProvider>
     </ThemeProvider>
   );
 }

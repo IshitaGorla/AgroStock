@@ -1,105 +1,113 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Link, router } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { BrandHeader } from '@/components/agro/brand-header';
+import { GradientButton } from '@/components/agro/gradient-button';
+import { colors } from '@/constants/agro-stock';
 
 export default function SignUp() {
-  return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Create Account', headerShadowVisible: false }} />
-      
-      <View style={styles.header}>
-        <Text style={styles.title}>Join AgroStock</Text>
-        <Text style={styles.subtitle}>Create an account to get started</Text>
-      </View>
-      
-      <View style={styles.form}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Enter your full name" 
-            placeholderTextColor="#94a3b8"
-          />
-        </View>
+  const fields = [
+    'Name of the Company',
+    'Name of the Customer',
+    'Email Address',
+    'Customer Phone Number',
+    'Vehicle Number',
+    'Aadhar Number',
+    'PAN Number',
+  ];
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Enter your email" 
-            placeholderTextColor="#94a3b8"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+  return (
+    <View style={styles.screen}>
+      <BrandHeader />
+      <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
+        <Text selectable={false} style={styles.kicker}>Get Yourself Registered</Text>
+        <View style={styles.panel}>
+          {fields.map((field) => (
+            <TextInput
+              autoCapitalize="words"
+              keyboardType={field.includes('Email') ? 'email-address' : 'default'}
+              key={field}
+              placeholder={field}
+              placeholderTextColor="#b9b9b9"
+              style={styles.input}
+            />
+          ))}
+
+          <View style={styles.actions}>
+            <GradientButton label="Register" onPress={() => router.replace('/sign-in')} />
+            <View style={styles.loginRow}>
+              <Text selectable={false} style={styles.helper}>Already Registered?</Text>
+              <Link href="/sign-in" asChild>
+                <Pressable>
+                  <Text selectable={false} style={styles.link}>Go to Login</Text>
+                </Pressable>
+              </Link>
+            </View>
+          </View>
         </View>
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Create a password" 
-            placeholderTextColor="#94a3b8"
-            secureTextEntry
-          />
-        </View>
-        
-        <TouchableOpacity style={styles.button} onPress={() => router.replace('/(tabs)')}>
-          <Text style={styles.buttonText}>Sign Up</Text>
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    padding: 24,
+  actions: {
+    gap: 14,
+    marginTop: 52,
   },
-  header: {
-    marginTop: 20,
-    marginBottom: 40,
-    gap: 8,
+  content: {
+    flexGrow: 1,
+    paddingBottom: 34,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#0f172a',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#64748b',
-  },
-  form: {
-    gap: 24,
-  },
-  inputContainer: {
-    gap: 8,
-  },
-  label: {
+  helper: {
+    color: colors.ink,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
+    fontWeight: '700',
+    letterSpacing: 0,
   },
   input: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#0f172a',
+    borderColor: '#eff8cf',
+    borderRadius: 8,
+    borderWidth: 2,
+    color: colors.ink,
+    fontSize: 18,
+    minHeight: 46,
+    paddingHorizontal: 12,
   },
-  button: {
-    backgroundColor: '#10b981',
-    paddingVertical: 18,
-    borderRadius: 12,
+  kicker: {
+    color: colors.ink,
+    fontSize: 18,
+    fontStyle: 'italic',
+    fontWeight: '900',
+    letterSpacing: 0,
+    marginTop: -76,
+    textAlign: 'center',
+    zIndex: 2,
+  },
+  link: {
+    color: colors.aqua,
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  loginRow: {
     alignItems: 'center',
-    marginTop: 12,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  panel: {
+    backgroundColor: colors.paper,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    gap: 10,
+    marginTop: 40,
+    minHeight: 560,
+    padding: 18,
+    paddingTop: 64,
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: colors.paper,
   },
 });
