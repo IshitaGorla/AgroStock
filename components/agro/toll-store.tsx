@@ -9,7 +9,10 @@ export type TollEntry = {
   type: string;
   destination: string;
   operator: string;
+  goodDescription: string;
   driver: string;
+  driverPhoneNumber: string;
+  numberOfPersons: number;
   entryTime: string;
   status: TollEntryStatus;
 };
@@ -19,7 +22,11 @@ type NewTollEntry = {
   vehicleType: string;
   type: string;
   destination: string;
+  customerName: string;
+  goodDescription: string;
   driver: string;
+  driverPhoneNumber: string;
+  numberOfPersons: number;
 };
 
 type TollStore = {
@@ -41,7 +48,10 @@ const initialEntries: TollEntry[] = [
     type: 'Storage',
     destination: 'Packhouse',
     operator: 'Isaac',
+    goodDescription: 'Vegetable crates',
     driver: 'hello',
+    driverPhoneNumber: '9876543210',
+    numberOfPersons: 2,
     entryTime: '01.04.2026 03:32 pm',
     status: 'IN PREMISES',
   },
@@ -52,7 +62,10 @@ const initialEntries: TollEntry[] = [
     type: 'Deliver',
     destination: 'Cold Storage',
     operator: 'Isaac',
+    goodDescription: 'Dairy supplies',
     driver: 'Mohan',
+    driverPhoneNumber: '9876543211',
+    numberOfPersons: 1,
     entryTime: '01.04.2026 03:28 pm',
     status: 'EXITED',
   },
@@ -63,7 +76,10 @@ const initialEntries: TollEntry[] = [
     type: 'Guest',
     destination: 'Cold Storage',
     operator: 'Isaac',
+    goodDescription: 'Guest visit',
     driver: 'Ravi',
+    driverPhoneNumber: '9876543212',
+    numberOfPersons: 3,
     entryTime: '01.04.2026 03:20 pm',
     status: 'EXITED',
   },
@@ -74,7 +90,10 @@ const initialEntries: TollEntry[] = [
     type: 'Deliver',
     destination: 'Warehouse',
     operator: 'Isaac',
+    goodDescription: 'Grain bags',
     driver: 'Kumar',
+    driverPhoneNumber: '9876543213',
+    numberOfPersons: 2,
     entryTime: '01.04.2026 03:12 pm',
     status: 'EXITED',
   },
@@ -84,6 +103,21 @@ const TollContext = createContext<TollStore | null>(null);
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function formatIstDateTime(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: true,
+    minute: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return `${values.day}.${values.month}.${values.year} ${values.hour}:${values.minute} ${values.dayPeriod.toLowerCase()}`;
 }
 
 export function TollStoreProvider({ children }: PropsWithChildren) {
@@ -113,11 +147,14 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       id: `${Date.now()}`,
       vehicleNumber: entry.vehicleNumber.trim().toLowerCase(),
       vehicleType: entry.vehicleType.trim() || 'Vehicle',
-      type: entry.type.trim() || 'Deliver',
+      type: entry.type.trim() || 'Delivery',
       destination: entry.destination.trim() || 'Packhouse',
-      operator: 'Isaac',
+      operator: entry.customerName.trim() || 'Customer',
+      goodDescription: entry.goodDescription.trim() || 'Goods',
       driver: entry.driver.trim() || 'Driver',
-      entryTime: '01.04.2026 03:32 pm',
+      driverPhoneNumber: entry.driverPhoneNumber.trim(),
+      numberOfPersons: entry.numberOfPersons,
+      entryTime: formatIstDateTime(new Date()),
       status: 'IN PREMISES',
     };
 

@@ -50,9 +50,13 @@ export default function VehicleExitScreen() {
             <Text selectable style={styles.detailText}>Vehicle: {selected.vehicleNumber}</Text>
             <Text selectable style={styles.detailText}>Vehicle Type: {selected.vehicleType}</Text>
             <Text selectable style={styles.detailText}>Type: {selected.type}</Text>
+            <Text selectable style={styles.detailText}>Customer: {selected.operator}</Text>
+            <Text selectable style={styles.detailText}>Good Description: {selected.goodDescription}</Text>
             <Text selectable style={styles.detailText}>To: {selected.destination}</Text>
             <Text selectable style={styles.muted}>Entry: {selected.entryTime}</Text>
             <Text selectable style={styles.muted}>Driver: {selected.driver}</Text>
+            <Text selectable style={styles.muted}>Driver Phone: {selected.driverPhoneNumber || 'Not provided'}</Text>
+            <Text selectable style={styles.muted}>Persons: {selected.numberOfPersons}</Text>
             <Text
               selectable
               style={[styles.status, selected.status === 'EXITED' ? styles.exited : styles.inPremises]}>
