@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors } from '@/constants/agro-stock';
 
@@ -18,14 +18,12 @@ export function GradientButton({ label, onPress, disabled, small, fullWidth = tr
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        gradientBackground,
         small && styles.small,
         !fullWidth && styles.fit,
         disabled && styles.disabled,
         pressed && !disabled && styles.pressed,
       ]}>
-      <View pointerEvents="none" style={styles.leftEdge} />
-      <View pointerEvents="none" style={styles.shine} />
-      <View pointerEvents="none" style={styles.rightEdge} />
       <Text selectable={false} style={[styles.label, small && styles.smallLabel, disabled && styles.disabledLabel]}>
         {label}
       </Text>
@@ -47,7 +45,6 @@ const styles = StyleSheet.create({
     boxShadow: '0 5px 10px rgba(50, 85, 36, 0.22)',
   },
   disabled: {
-    backgroundColor: '#ccdcb3',
     boxShadow: 'none',
     opacity: 0.75,
   },
@@ -66,30 +63,6 @@ const styles = StyleSheet.create({
   pressed: {
     transform: [{ scale: 0.98 }],
   },
-  leftEdge: {
-    backgroundColor: 'rgba(45, 91, 31, 0.42)',
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    top: 0,
-    width: '28%',
-  },
-  rightEdge: {
-    backgroundColor: 'rgba(45, 91, 31, 0.42)',
-    bottom: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    width: '28%',
-  },
-  shine: {
-    backgroundColor: 'rgba(255, 255, 210, 0.54)',
-    bottom: 0,
-    left: '34%',
-    position: 'absolute',
-    top: 0,
-    width: '32%',
-  },
   small: {
     minHeight: 48,
     paddingHorizontal: 22,
@@ -99,3 +72,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
+const gradientBackground = {
+  experimental_backgroundImage:
+    'linear-gradient(to right, #5e923e 0%, #8fbd5c 24%, #eef8b4 50%, #8fbd5c 76%, #5e923e 100%)',
+} as const;

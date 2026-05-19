@@ -3,9 +3,12 @@ import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-nativ
 
 import { GradientButton } from '@/components/agro/gradient-button';
 import { Toast } from '@/components/agro/toast';
+import { useTollStore } from '@/components/agro/toll-store';
 import { colors, teaLeafImage } from '@/constants/agro-stock';
 
 export default function TollEntryScreen() {
+  const { currentUser } = useTollStore();
+
   return (
     <ImageBackground source={{ uri: teaLeafImage }} style={styles.background} resizeMode="cover">
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
@@ -15,7 +18,7 @@ export default function TollEntryScreen() {
           <GradientButton label="Vehicle Exit" onPress={() => router.push('/vehicle-exit')} />
         </View>
       </ScrollView>
-      <Toast message="Welcome Isaac!" />
+      <Toast message={`Welcome ${currentUser}!`} />
     </ImageBackground>
   );
 }

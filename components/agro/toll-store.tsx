@@ -24,9 +24,11 @@ type NewTollEntry = {
 
 type TollStore = {
   entries: TollEntry[];
+  currentUser: string;
   addEntry: (entry: NewTollEntry) => TollEntry;
   findEntry: (vehicleNumber: string) => TollEntry | undefined;
   processExit: (vehicleNumber: string) => TollEntry | undefined;
+  setCurrentUser: (name: string) => void;
 };
 
 const initialEntries: TollEntry[] = [
@@ -80,6 +82,7 @@ const TollContext = createContext<TollStore | null>(null);
 
 export function TollStoreProvider({ children }: PropsWithChildren) {
   const [entries, setEntries] = useState<TollEntry[]>(initialEntries);
+  const [currentUser, setCurrentUser] = useState('Customer');
 
   const addEntry = useCallback((entry: NewTollEntry) => {
     const created: TollEntry = {
@@ -127,11 +130,13 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
   const value = useMemo(
     () => ({
       addEntry,
+      currentUser,
       entries,
       findEntry,
       processExit,
+      setCurrentUser,
     }),
-    [addEntry, entries, findEntry, processExit],
+    [addEntry, currentUser, entries, findEntry, processExit],
   );
 
   return <TollContext.Provider value={value}>{children}</TollContext.Provider>;

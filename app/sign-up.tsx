@@ -1,20 +1,45 @@
 import { Link, router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BrandHeader } from '@/components/agro/brand-header';
 import { GradientButton } from '@/components/agro/gradient-button';
+import { Toast } from '@/components/agro/toast';
 import { colors } from '@/constants/agro-stock';
 
+const fields = [
+  'Name of the Company',
+  'Name of the Customer',
+  'Email Address',
+  'Customer Phone Number',
+  'Vehicle Number',
+  'Aadhar Number',
+  'PAN Number',
+];
+
 export default function SignUp() {
-  const fields = [
-    'Name of the Company',
-    'Name of the Customer',
-    'Email Address',
-    'Customer Phone Number',
-    'Vehicle Number',
-    'Aadhar Number',
-    'PAN Number',
-  ];
+  const [form, setForm] = useState<Record<string, string>>(
+    Object.fromEntries(fields.map((field) => [field, ''])),
+  );
+  const [toast, setToast] = useState('');
+
+  const register = () => {
+    const values = Object.values(form).map((value) => value.trim());
+    const allBlank = values.every((value) => !value);
+    const hasBlank = values.some((value) => !value);
+
+    if (allBlank) {
+      setToast('Please fill in the username and all details.');
+      return;
+    }
+
+    if (hasBlank) {
+      setToast('Please fill in all required details.');
+      return;
+    }
+
+    router.replace('/sign-in');
+  };
 
   return (
     <View style={styles.screen}>
@@ -27,14 +52,16 @@ export default function SignUp() {
               autoCapitalize="words"
               keyboardType={field.includes('Email') ? 'email-address' : 'default'}
               key={field}
+              onChangeText={(value) => setForm((current) => ({ ...current, [field]: value }))}
               placeholder={field}
               placeholderTextColor="#b9b9b9"
               style={styles.input}
+              value={form[field]}
             />
           ))}
 
           <View style={styles.actions}>
-            <GradientButton label="Register" onPress={() => router.replace('/sign-in')} />
+            <GradientButton label="Register" onPress={register} />
             <View style={styles.loginRow}>
               <Text selectable={false} style={styles.helper}>Already Registered?</Text>
               <Link href="/sign-in" asChild>
@@ -46,6 +73,7 @@ export default function SignUp() {
           </View>
         </View>
       </ScrollView>
+      <Toast message={toast} onHidden={() => setToast('')} />
     </View>
   );
 }

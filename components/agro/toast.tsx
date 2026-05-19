@@ -1,13 +1,32 @@
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '@/constants/agro-stock';
 
 type ToastProps = {
   message?: string;
+  onHidden?: () => void;
 };
 
-export function Toast({ message }: ToastProps) {
-  if (!message) {
+export function Toast({ message, onHidden }: ToastProps) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!message) {
+      setVisible(false);
+      return;
+    }
+
+    setVisible(true);
+    const timer = setTimeout(() => {
+      setVisible(false);
+      onHidden?.();
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [message, onHidden]);
+
+  if (!message || !visible) {
     return null;
   }
 

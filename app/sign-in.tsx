@@ -4,9 +4,19 @@ import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 
 import { GradientButton } from '@/components/agro/gradient-button';
 import { Toast } from '@/components/agro/toast';
+import { useTollStore } from '@/components/agro/toll-store';
 import { colors, vineHeroImage } from '@/constants/agro-stock';
 
+function nameFromEmail(email: string) {
+  const localPart = email.trim().split('@')[0] || 'Customer';
+  return localPart
+    .replace(/[._-]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default function SignIn() {
+  const { setCurrentUser } = useTollStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [toast, setToast] = useState('');
@@ -17,7 +27,9 @@ export default function SignIn() {
       return;
     }
 
-    setToast('Signed in successfully!');
+    const displayName = nameFromEmail(email);
+    setCurrentUser(displayName);
+    setToast(`Welcome ${displayName}! Signed in successfully.`);
     setTimeout(() => router.replace('/toll-entry'), 650);
   };
 
@@ -62,7 +74,7 @@ export default function SignIn() {
           </Link>
         </View>
       </ScrollView>
-      <Toast message={toast} />
+      <Toast message={toast} onHidden={() => setToast('')} />
     </ImageBackground>
   );
 }
