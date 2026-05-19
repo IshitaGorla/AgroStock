@@ -1,96 +1,136 @@
-import { Stack, router } from 'expo-router';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Link, router } from 'expo-router';
+import { useState } from 'react';
+import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { GradientButton } from '@/components/agro/gradient-button';
+import { Toast } from '@/components/agro/toast';
+import { colors, vineHeroImage } from '@/constants/agro-stock';
 
 export default function SignIn() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [toast, setToast] = useState('');
+
+  const login = () => {
+    if (!email.trim() || !password.trim()) {
+      setToast('Unable to log in. Enter email and password.');
+      return;
+    }
+
+    setToast('Signed in successfully!');
+    setTimeout(() => router.replace('/toll-entry'), 650);
+  };
+
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Sign In', headerShadowVisible: false }} />
-      
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to continue to AgroStock</Text>
-      </View>
-      
-      <View style={styles.form}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Enter your email" 
-            placeholderTextColor="#94a3b8"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+    <ImageBackground source={{ uri: vineHeroImage }} style={styles.background} resizeMode="cover">
+      <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
+        <Text selectable={false} style={styles.title}>Customer Login</Text>
+
+        <View style={styles.panel}>
+          <View style={styles.inputRow}>
+            <Text selectable={false} style={styles.icon}>@</Text>
+            <TextInput
+              autoCapitalize="none"
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="Email Address"
+              placeholderTextColor="#a9a9a9"
+              style={styles.input}
+              value={email}
+            />
+          </View>
+          <View style={styles.inputRow}>
+            <Text selectable={false} style={styles.icon}>#</Text>
+            <TextInput
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor="#a9a9a9"
+              secureTextEntry
+              style={styles.input}
+              value={password}
+            />
+          </View>
+          <GradientButton label="Login" onPress={login} />
         </View>
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput 
-            style={styles.input} 
-            placeholder="Enter your password" 
-            placeholderTextColor="#94a3b8"
-            secureTextEntry
-          />
+
+        <View style={styles.linkRow}>
+          <Text selectable={false} style={styles.helper}>Do not have an account?</Text>
+          <Link href="/sign-up" asChild>
+            <Pressable>
+              <Text selectable={false} style={styles.link}>Register Now</Text>
+            </Pressable>
+          </Link>
         </View>
-        
-        <TouchableOpacity style={styles.button} onPress={() => router.replace('/(tabs)')}>
-          <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+      <Toast message={toast} />
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    padding: 24,
   },
-  header: {
-    marginTop: 20,
-    marginBottom: 40,
-    gap: 8,
+  content: {
+    flexGrow: 1,
+    gap: 28,
+    justifyContent: 'center',
+    minHeight: 700,
+    paddingHorizontal: 22,
+    paddingBottom: 110,
+    paddingTop: 72,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#0f172a',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#64748b',
-  },
-  form: {
-    gap: 24,
-  },
-  inputContainer: {
-    gap: 8,
-  },
-  label: {
+  helper: {
+    color: colors.ink,
     fontSize: 14,
     fontWeight: '600',
-    color: '#334155',
+    letterSpacing: 0,
+  },
+  icon: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 0,
+    width: 24,
   },
   input: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#0f172a',
+    borderBottomColor: '#79958b',
+    borderBottomWidth: 2,
+    color: colors.ink,
+    flex: 1,
+    fontSize: 18,
+    minHeight: 52,
   },
-  button: {
-    backgroundColor: '#10b981',
-    paddingVertical: 18,
-    borderRadius: 12,
+  inputRow: {
     alignItems: 'center',
-    marginTop: 12,
+    flexDirection: 'row',
+    gap: 10,
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  link: {
+    color: colors.aqua,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  linkRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  panel: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 8,
+    gap: 22,
+    padding: 28,
+    width: '100%',
+    boxShadow: '0 9px 20px rgba(21, 88, 71, 0.24)',
+  },
+  title: {
+    color: colors.ink,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 0,
+    paddingHorizontal: 28,
   },
 });
