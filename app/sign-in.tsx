@@ -16,18 +16,26 @@ function nameFromEmail(email: string) {
 }
 
 export default function SignIn() {
-  const { setCurrentUser } = useTollStore();
+  const { loginUser, setCurrentUser } = useTollStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [toast, setToast] = useState('');
 
   const login = () => {
-    if (!email.trim() || !password.trim()) {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
       setToast('Unable to log in. Enter email and password.');
       return;
     }
 
-    const displayName = nameFromEmail(email);
+    if (!loginUser(trimmedEmail, trimmedPassword)) {
+      setToast('Invalid email or password.');
+      return;
+    }
+
+    const displayName = nameFromEmail(trimmedEmail);
     setCurrentUser(displayName);
     setToast(`Welcome ${displayName}! Signed in successfully.`);
     setTimeout(() => router.replace('/toll-entry'), 650);
@@ -43,22 +51,26 @@ export default function SignIn() {
             <Text selectable={false} style={styles.icon}>@</Text>
             <TextInput
               autoCapitalize="none"
+              autoCorrect={false}
               keyboardType="email-address"
               onChangeText={setEmail}
               placeholder="Email Address"
               placeholderTextColor="#a9a9a9"
               style={styles.input}
+              textContentType="emailAddress"
               value={email}
             />
           </View>
           <View style={styles.inputRow}>
             <Text selectable={false} style={styles.icon}>#</Text>
             <TextInput
+              autoCapitalize="none"
               onChangeText={setPassword}
               placeholder="Password"
               placeholderTextColor="#a9a9a9"
               secureTextEntry
               style={styles.input}
+              textContentType="password"
               value={password}
             />
           </View>

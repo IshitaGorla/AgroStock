@@ -64,8 +64,19 @@ export default function VehicleExitScreen() {
           <View style={styles.emptySpace} />
         )}
 
-        <View style={styles.viewButton}>
-          <GradientButton label="View All Entries" onPress={() => router.push('/entries')} small fullWidth={false} />
+        <View style={styles.footerActions}>
+          <GradientButton label="Back to Toll Entry" onPress={() => router.navigate('/toll-entry')} small fullWidth={false} />
+          <GradientButton
+            label="View All Entries"
+            onPress={() =>
+              router.push({
+                pathname: '/entries',
+                params: { returnLabel: 'Back to Vehicle Exit', returnTo: '/vehicle-exit' },
+              })
+            }
+            small
+            fullWidth={false}
+          />
         </View>
       </ScrollView>
       <Toast message={toast} />
@@ -146,8 +157,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     textAlign: 'center',
   },
-  viewButton: {
+  footerActions: {
     alignItems: 'center',
+    gap: 12,
     marginTop: 'auto',
   },
 });

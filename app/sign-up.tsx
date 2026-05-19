@@ -5,40 +5,49 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { BrandHeader } from '@/components/agro/brand-header';
 import { GradientButton } from '@/components/agro/gradient-button';
 import { Toast } from '@/components/agro/toast';
+import { useTollStore } from '@/components/agro/toll-store';
 import { colors } from '@/constants/agro-stock';
 
-const fields = [
-  'Name of the Company',
-  'Name of the Customer',
-  'Email Address',
-  'Customer Phone Number',
-  'Vehicle Number',
-  'Aadhar Number',
-  'PAN Number',
-];
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
 
 export default function SignUp() {
-  const [form, setForm] = useState<Record<string, string>>(
-    Object.fromEntries(fields.map((field) => [field, ''])),
-  );
+  const { registerUser } = useTollStore();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [toast, setToast] = useState('');
 
   const register = () => {
-    const values = Object.values(form).map((value) => value.trim());
-    const allBlank = values.every((value) => !value);
-    const hasBlank = values.some((value) => !value);
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    const trimmedConfirmPassword = confirmPassword.trim();
 
-    if (allBlank) {
-      setToast('Please fill in the username and all details.');
+    if (!trimmedEmail || !trimmedPassword || !trimmedConfirmPassword) {
+      setToast('Please enter email, password, and confirm password.');
       return;
     }
 
-    if (hasBlank) {
-      setToast('Please fill in all required details.');
+    if (!isValidEmail(trimmedEmail)) {
+      setToast('Please enter a valid email address.');
       return;
     }
 
-    router.replace('/sign-in');
+    if (trimmedPassword !== trimmedConfirmPassword) {
+      setToast('Passwords do not match.');
+      return;
+    }
+
+    const registered = registerUser(trimmedEmail, trimmedPassword);
+
+    if (!registered) {
+      setToast('Email is already registered. Use the sign in option below.');
+      return;
+    }
+
+    setToast('Registration successful. Redirecting to sign in.');
+    setTimeout(() => router.replace('/sign-in'), 650);
   };
 
   return (
@@ -47,18 +56,37 @@ export default function SignUp() {
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
         <Text selectable={false} style={styles.kicker}>Get Yourself Registered</Text>
         <View style={styles.panel}>
-          {fields.map((field) => (
-            <TextInput
-              autoCapitalize="words"
-              keyboardType={field.includes('Email') ? 'email-address' : 'default'}
-              key={field}
-              onChangeText={(value) => setForm((current) => ({ ...current, [field]: value }))}
-              placeholder={field}
-              placeholderTextColor="#b9b9b9"
-              style={styles.input}
-              value={form[field]}
-            />
-          ))}
+          <TextInput
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            onChangeText={setEmail}
+            placeholder="Email Address"
+            placeholderTextColor="#b9b9b9"
+            style={styles.input}
+            textContentType="emailAddress"
+            value={email}
+          />
+          <TextInput
+            autoCapitalize="none"
+            onChangeText={setPassword}
+            placeholder="Password"
+            placeholderTextColor="#b9b9b9"
+            secureTextEntry
+            style={styles.input}
+            textContentType="newPassword"
+            value={password}
+          />
+          <TextInput
+            autoCapitalize="none"
+            onChangeText={setConfirmPassword}
+            placeholder="Confirm Password"
+            placeholderTextColor="#b9b9b9"
+            secureTextEntry
+            style={styles.input}
+            textContentType="newPassword"
+            value={confirmPassword}
+          />
 
           <View style={styles.actions}>
             <GradientButton label="Register" onPress={register} />

@@ -29,6 +29,8 @@ type TollStore = {
   findEntry: (vehicleNumber: string) => TollEntry | undefined;
   processExit: (vehicleNumber: string) => TollEntry | undefined;
   setCurrentUser: (name: string) => void;
+  registerUser: (email: string, password: string) => boolean;
+  loginUser: (email: string, password: string) => boolean;
 };
 
 const initialEntries: TollEntry[] = [
@@ -80,9 +82,31 @@ const initialEntries: TollEntry[] = [
 
 const TollContext = createContext<TollStore | null>(null);
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
 export function TollStoreProvider({ children }: PropsWithChildren) {
   const [entries, setEntries] = useState<TollEntry[]>(initialEntries);
   const [currentUser, setCurrentUser] = useState('Customer');
+  const [users, setUsers] = useState<{ email: string; password: string }[]>([]);
+
+  const registerUser = useCallback((email: string, password: string) => {
+    const normalizedEmail = normalizeEmail(email);
+
+    if (users.some((user) => user.email === normalizedEmail)) {
+      return false;
+    }
+
+    setUsers((current) => [...current, { email: normalizedEmail, password }]);
+    return true;
+  }, [users]);
+
+  const loginUser = useCallback((email: string, password: string) => {
+    const normalizedEmail = normalizeEmail(email);
+
+    return users.some((user) => user.email === normalizedEmail && user.password === password);
+  }, [users]);
 
   const addEntry = useCallback((entry: NewTollEntry) => {
     const created: TollEntry = {
@@ -135,8 +159,10 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       findEntry,
       processExit,
       setCurrentUser,
+      registerUser,
+      loginUser,
     }),
-    [addEntry, currentUser, entries, findEntry, processExit],
+    [addEntry, currentUser, entries, findEntry, processExit, registerUser, loginUser],
   );
 
   return <TollContext.Provider value={value}>{children}</TollContext.Provider>;

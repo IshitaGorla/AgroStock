@@ -16,6 +16,15 @@ export default function TollEntryScreen() {
         <View style={styles.actions}>
           <GradientButton label="Vehicle Entry" onPress={() => router.push('/vehicle-entry')} />
           <GradientButton label="Vehicle Exit" onPress={() => router.push('/vehicle-exit')} />
+          <GradientButton
+            label="Toll Entries"
+            onPress={() =>
+              router.push({
+                pathname: '/entries',
+                params: { returnLabel: 'Back to Toll Entry', returnTo: '/toll-entry' },
+              })
+            }
+          />
         </View>
       </ScrollView>
       <Toast message={`Welcome ${currentUser}!`} />

@@ -1,14 +1,20 @@
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BrandHeader } from '@/components/agro/brand-header';
+import { GradientButton } from '@/components/agro/gradient-button';
 import { TollEntry, TollEntryStatus, useTollStore } from '@/components/agro/toll-store';
 import { colors } from '@/constants/agro-stock';
 
 type Filter = 'All' | TollEntryStatus | 'My Entries';
+type ReturnRoute = '/toll-entry' | '/vehicle-entry' | '/vehicle-exit';
+
+const allowedReturnRoutes = new Set<ReturnRoute>(['/toll-entry', '/vehicle-entry', '/vehicle-exit']);
 
 export default function EntriesScreen() {
   const { entries } = useTollStore();
+  const params = useLocalSearchParams<{ returnLabel?: string; returnTo?: string }>();
   const [filter, setFilter] = useState<Filter>('All');
 
   const visibleEntries = useMemo(() => {
@@ -18,6 +24,11 @@ export default function EntriesScreen() {
 
     return entries.filter((entry) => entry.status === filter);
   }, [entries, filter]);
+
+  const returnTo = allowedReturnRoutes.has(params.returnTo as ReturnRoute)
+    ? (params.returnTo as ReturnRoute)
+    : '/toll-entry';
+  const returnLabel = typeof params.returnLabel === 'string' ? params.returnLabel : 'Back to Toll Entry';
 
   return (
     <View style={styles.screen}>
@@ -43,6 +54,12 @@ export default function EntriesScreen() {
           {visibleEntries.map((entry) => (
             <EntryCard entry={entry} key={entry.id} />
           ))}
+        </View>
+
+        <View style={styles.footerActions}>
+          <GradientButton label={returnLabel} onPress={() => router.navigate(returnTo)} small fullWidth={false} />
+          <GradientButton label="Vehicle Entry" onPress={() => router.navigate('/vehicle-entry')} small fullWidth={false} />
+          <GradientButton label="Vehicle Exit" onPress={() => router.navigate('/vehicle-exit')} small fullWidth={false} />
         </View>
       </ScrollView>
     </View>
@@ -154,6 +171,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     paddingHorizontal: 14,
+  },
+  footerActions: {
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 8,
   },
   list: {
     gap: 16,
