@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BrandHeader } from '@/components/agro/brand-header';
@@ -13,9 +13,15 @@ type ReturnRoute = '/toll-entry' | '/vehicle-entry' | '/vehicle-exit';
 const allowedReturnRoutes = new Set<ReturnRoute>(['/toll-entry', '/vehicle-entry', '/vehicle-exit']);
 
 export default function EntriesScreen() {
-  const { entries } = useTollStore();
+  const { canAccess, entries } = useTollStore();
   const params = useLocalSearchParams<{ returnLabel?: string; returnTo?: string }>();
   const [filter, setFilter] = useState<Filter>('All');
+
+  useEffect(() => {
+    if (!canAccess('vehicles')) {
+      router.replace('/toll-entry');
+    }
+  }, [canAccess]);
 
   const visibleEntries = useMemo(() => {
     if (filter === 'All' || filter === 'My Entries') {
@@ -24,6 +30,10 @@ export default function EntriesScreen() {
 
     return entries.filter((entry) => entry.status === filter);
   }, [entries, filter]);
+
+  if (!canAccess('vehicles')) {
+    return null;
+  }
 
   const returnTo = allowedReturnRoutes.has(params.returnTo as ReturnRoute)
     ? (params.returnTo as ReturnRoute)
@@ -37,14 +47,14 @@ export default function EntriesScreen() {
         <Text selectable={false} style={styles.title}>Toll Entries</Text>
 
         <View style={styles.filters}>
-          {(['All', 'IN PREMISES', 'My Entries'] as Filter[]).map((item) => (
+          {(['All', 'IN PREMISES', 'BILL GENERATED', 'My Entries'] as Filter[]).map((item) => (
             <Pressable
               accessibilityRole="button"
               key={item}
               onPress={() => setFilter(item)}
               style={[styles.filterButton, filter === item && styles.activeFilter]}>
               <Text selectable={false} style={styles.filterText}>
-                {item === 'IN PREMISES' ? 'In Premises' : item}
+                {item === 'IN PREMISES' ? 'In Premises' : item === 'BILL GENERATED' ? 'Bill' : item}
               </Text>
             </Pressable>
           ))}
@@ -85,6 +95,7 @@ function EntryCard({ entry }: { entry: TollEntry }) {
         <View style={styles.cardColumnRight}>
           <Text selectable style={styles.destination}>To: {entry.destination}</Text>
           <Text selectable style={styles.muted}>{entry.entryTime}</Text>
+          <Text selectable style={styles.muted}>Commodity: {entry.commodity}</Text>
         </View>
       </View>
     </View>

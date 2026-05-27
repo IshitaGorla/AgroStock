@@ -7,17 +7,9 @@ import { Toast } from '@/components/agro/toast';
 import { useTollStore } from '@/components/agro/toll-store';
 import { colors, vineHeroImage } from '@/constants/agro-stock';
 
-function nameFromEmail(email: string) {
-  const localPart = email.trim().split('@')[0] || 'Customer';
-  return localPart
-    .replace(/[._-]+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
 export default function SignIn() {
-  const { loginUser, setCurrentUser } = useTollStore();
-  const [email, setEmail] = useState('');
+  const { employees, loginUser } = useTollStore();
+  const [email, setEmail] = useState('security');
   const [password, setPassword] = useState('');
   const [toast, setToast] = useState('');
 
@@ -30,34 +22,32 @@ export default function SignIn() {
       return;
     }
 
-    if (!loginUser(trimmedEmail, trimmedPassword)) {
-      setToast('Invalid email or password.');
+    const employee = loginUser(trimmedEmail, trimmedPassword);
+
+    if (!employee) {
+      setToast('Invalid user ID/email or password.');
       return;
     }
 
-    const displayName = nameFromEmail(trimmedEmail);
-    setCurrentUser(displayName);
-    setToast(`Welcome ${displayName}! Signed in successfully.`);
+    setToast(`Welcome ${employee.fullName}! Signed in successfully.`);
     setTimeout(() => router.replace('/toll-entry'), 650);
   };
 
   return (
     <ImageBackground source={{ uri: vineHeroImage }} style={styles.background} resizeMode="cover">
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
-        <Text selectable={false} style={styles.title}>Customer Login</Text>
+        <Text selectable={false} style={styles.title}>Employee Login</Text>
 
         <View style={styles.panel}>
           <View style={styles.inputRow}>
-            <Text selectable={false} style={styles.icon}>@</Text>
+            <Text selectable={false} style={styles.icon}>ID</Text>
             <TextInput
               autoCapitalize="none"
               autoCorrect={false}
-              keyboardType="email-address"
               onChangeText={setEmail}
-              placeholder="Email Address"
+              placeholder="User ID, email, or employee ID"
               placeholderTextColor="#a9a9a9"
               style={styles.input}
-              textContentType="emailAddress"
               value={email}
             />
           </View>
@@ -77,8 +67,17 @@ export default function SignIn() {
           <GradientButton label="Login" onPress={login} />
         </View>
 
+        <View style={styles.credentials}>
+          <Text selectable={false} style={styles.credentialsTitle}>Demo role logins</Text>
+          {employees.map((employee) => (
+            <Text selectable key={employee.id} style={styles.credentialLine}>
+              {employee.userId} / {employee.password}
+            </Text>
+          ))}
+        </View>
+
         <View style={styles.linkRow}>
-          <Text selectable={false} style={styles.helper}>Do not have an account?</Text>
+          <Text selectable={false} style={styles.helper}>Need a gate account?</Text>
           <Link href="/sign-up" asChild>
             <Pressable>
               <Text selectable={false} style={styles.link}>Register Now</Text>
@@ -112,10 +111,10 @@ const styles = StyleSheet.create({
   },
   icon: {
     color: colors.ink,
-    fontSize: 22,
+    fontSize: 14,
     fontWeight: '900',
     letterSpacing: 0,
-    width: 24,
+    width: 28,
   },
   input: {
     borderBottomColor: '#79958b',
@@ -141,6 +140,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
+  },
+  credentialLine: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0,
+  },
+  credentials: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 8,
+    gap: 4,
+    padding: 12,
+    width: '100%',
+  },
+  credentialsTitle: {
+    color: colors.greenDark,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0,
+    textTransform: 'uppercase',
   },
   panel: {
     backgroundColor: 'rgba(255, 255, 255, 0.92)',

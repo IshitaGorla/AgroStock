@@ -1,6 +1,20 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useMemo, useState } from 'react';
 
-export type TollEntryStatus = 'IN PREMISES' | 'EXITED';
+export type EmployeeRole = 'security' | 'quality_inspector' | 'weighbridge' | 'admin' | 'stock_manager';
+export type TollEntryStatus = 'IN PREMISES' | 'BILL GENERATED' | 'EXITED';
+export type BillingStatus = 'UNPAID' | 'PAID';
+
+export type Employee = {
+  id: number;
+  empId: string;
+  fullName: string;
+  userId: string;
+  email: string;
+  mobile: string;
+  role: EmployeeRole;
+  department: string;
+  password: string;
+};
 
 export type TollEntry = {
   id: string;
@@ -13,8 +27,105 @@ export type TollEntry = {
   driver: string;
   driverPhoneNumber: string;
   numberOfPersons: number;
+  commodity: string;
   entryTime: string;
+  exitTime?: string;
   status: TollEntryStatus;
+  createdBy: number;
+};
+
+export type WeighbridgeRecord = {
+  id: string;
+  vehicleId: string;
+  transportReceiptNo: string;
+  companyName: string;
+  customerName: string;
+  phoneNumber: string;
+  aadhaarNumber: string;
+  panNumber: string;
+  gstNumber: string;
+  address: string;
+  loadedWeight: number;
+  emptyWeight: number;
+  netWeight: number;
+  applicationNumber: string;
+  verifiedBy: number;
+  createdAt: string;
+};
+
+export type QualityInspection = {
+  id: string;
+  vehicleId: string;
+  moistureContent: number;
+  foreignMatter: number;
+  organicMatter: number;
+  damagedGrains: number;
+  weeviledGrains: number;
+  fragments: number;
+  shrivelledGrains: number;
+  admixture: number;
+  fumigation: boolean;
+  qcStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  remarks: string;
+  inspectedAt: string;
+  inspectedBy: number;
+};
+
+export type StorageLocation = {
+  id: number;
+  unitType: string;
+  floorName: string;
+  roomName: string;
+  capacityInTonnes: number;
+  currentOccupancy: number;
+};
+
+export type StockAssignment = {
+  id: string;
+  vehicleId: string;
+  storageLocationId: number;
+  stackNumber: string;
+  lotNumber: string;
+  bagCount: number;
+  totalWeight: number;
+  averageBagWeight: number;
+  assignedAt: string;
+  assignedBy: number;
+};
+
+export type CommodityMovement = {
+  id: string;
+  vehicleId: string;
+  fromLocation: number;
+  toLocation: number;
+  movementTime: string;
+  remarks: string;
+  movedBy: number;
+};
+
+export type BillingRecord = {
+  id: string;
+  vehicleId: string;
+  commodityType: string;
+  quantityInTonnes: number;
+  loadingCharge: number;
+  unloadingCharge: number;
+  rentCharge: number;
+  laborCharge: number;
+  totalAmount: number;
+  generatedAt: string;
+  generatedBy: number;
+  paidAt?: string;
+  paidBy?: number;
+  status: BillingStatus;
+};
+
+export type CameraLog = {
+  id: string;
+  vehicleId: string;
+  imageUrl: string;
+  capturedAt: string;
+  captureType: 'ENTRY' | 'EXIT';
 };
 
 type NewTollEntry = {
@@ -27,18 +138,115 @@ type NewTollEntry = {
   driver: string;
   driverPhoneNumber: string;
   numberOfPersons: number;
+  commodity: string;
 };
 
+type NewWeighbridgeRecord = Omit<WeighbridgeRecord, 'id' | 'createdAt' | 'verifiedBy' | 'netWeight'>;
+type NewQualityInspection = Omit<QualityInspection, 'id' | 'inspectedAt' | 'inspectedBy'>;
+type NewStockAssignment = Omit<StockAssignment, 'id' | 'assignedAt' | 'assignedBy' | 'averageBagWeight'>;
+type NewCommodityMovement = Omit<CommodityMovement, 'id' | 'movementTime' | 'movedBy'>;
+
 type TollStore = {
+  employees: Employee[];
   entries: TollEntry[];
+  weighbridgeRecords: WeighbridgeRecord[];
+  qualityInspections: QualityInspection[];
+  storageLocations: StorageLocation[];
+  stockAssignments: StockAssignment[];
+  commodityMovements: CommodityMovement[];
+  billingRecords: BillingRecord[];
+  cameraLogs: CameraLog[];
+  currentEmployee?: Employee;
   currentUser: string;
   addEntry: (entry: NewTollEntry) => TollEntry;
+  addWeighbridgeRecord: (record: NewWeighbridgeRecord) => WeighbridgeRecord | undefined;
+  addQualityInspection: (inspection: NewQualityInspection) => QualityInspection | undefined;
+  addStockAssignment: (assignment: NewStockAssignment) => StockAssignment | undefined;
+  addCommodityMovement: (movement: NewCommodityMovement) => CommodityMovement | undefined;
   findEntry: (vehicleNumber: string) => TollEntry | undefined;
-  processExit: (vehicleNumber: string) => TollEntry | undefined;
+  generateExitBill: (vehicleNumber: string) => BillingRecord | undefined;
+  markBillPaid: (billId: string) => TollEntry | undefined;
   setCurrentUser: (name: string) => void;
-  registerUser: (email: string, password: string) => boolean;
-  loginUser: (email: string, password: string) => boolean;
+  registerUser: (email: string, password: string, role?: EmployeeRole) => boolean;
+  loginUser: (userIdOrEmail: string, password: string) => Employee | undefined;
+  canAccess: (module: AppModule) => boolean;
 };
+
+export type AppModule =
+  | 'vehicles'
+  | 'vehicle-entry'
+  | 'vehicle-exit'
+  | 'billing'
+  | 'weighbridge'
+  | 'quality'
+  | 'stock'
+  | 'admin';
+
+const roleModules: Record<EmployeeRole, AppModule[]> = {
+  security: ['vehicles', 'vehicle-entry', 'vehicle-exit', 'billing'],
+  quality_inspector: ['vehicles', 'quality'],
+  weighbridge: ['vehicles', 'weighbridge'],
+  admin: ['vehicles', 'vehicle-entry', 'vehicle-exit', 'billing', 'weighbridge', 'quality', 'stock', 'admin'],
+  stock_manager: ['vehicles', 'stock'],
+};
+
+const employeesSeed: Employee[] = [
+  {
+    id: 1,
+    empId: 'EMP-SEC-001',
+    fullName: 'Security Officer',
+    userId: 'security',
+    email: 'security@agrostock.local',
+    mobile: '9000000001',
+    role: 'security',
+    department: 'Security Gate',
+    password: 'security123',
+  },
+  {
+    id: 2,
+    empId: 'EMP-QC-001',
+    fullName: 'Quality Inspector',
+    userId: 'quality',
+    email: 'quality@agrostock.local',
+    mobile: '9000000002',
+    role: 'quality_inspector',
+    department: 'Quality Control',
+    password: 'quality123',
+  },
+  {
+    id: 3,
+    empId: 'EMP-WB-001',
+    fullName: 'Weighbridge Operator',
+    userId: 'weighbridge',
+    email: 'weighbridge@agrostock.local',
+    mobile: '9000000003',
+    role: 'weighbridge',
+    department: 'Weighbridge',
+    password: 'weigh123',
+  },
+  {
+    id: 4,
+    empId: 'EMP-ADM-001',
+    fullName: 'Admin User',
+    userId: 'admin',
+    email: 'admin@agrostock.local',
+    mobile: '9000000004',
+    role: 'admin',
+    department: 'Administration',
+    password: 'admin123',
+  },
+  {
+    id: 5,
+    empId: 'EMP-STK-001',
+    fullName: 'Stock Manager',
+    userId: 'stock',
+    email: 'stock@agrostock.local',
+    mobile: '9000000005',
+    role: 'stock_manager',
+    department: 'Stock Management',
+    password: 'stock123',
+  },
+];
 
 const initialEntries: TollEntry[] = [
   {
@@ -49,25 +257,30 @@ const initialEntries: TollEntry[] = [
     destination: 'Packhouse',
     operator: 'Isaac',
     goodDescription: 'Vegetable crates',
+    commodity: 'Vegetables',
     driver: 'hello',
     driverPhoneNumber: '9876543210',
     numberOfPersons: 2,
     entryTime: '01.04.2026 03:32 pm',
     status: 'IN PREMISES',
+    createdBy: 1,
   },
   {
     id: '2',
     vehicleNumber: 'tn34890',
     vehicleType: 'Mini Truck',
-    type: 'Deliver',
+    type: 'Delivery',
     destination: 'Cold Storage',
     operator: 'Isaac',
     goodDescription: 'Dairy supplies',
+    commodity: 'Dairy',
     driver: 'Mohan',
     driverPhoneNumber: '9876543211',
     numberOfPersons: 1,
     entryTime: '01.04.2026 03:28 pm',
+    exitTime: '01.04.2026 04:10 pm',
     status: 'EXITED',
+    createdBy: 1,
   },
   {
     id: '3',
@@ -77,32 +290,27 @@ const initialEntries: TollEntry[] = [
     destination: 'Cold Storage',
     operator: 'Isaac',
     goodDescription: 'Guest visit',
+    commodity: 'Guest',
     driver: 'Ravi',
     driverPhoneNumber: '9876543212',
     numberOfPersons: 3,
     entryTime: '01.04.2026 03:20 pm',
+    exitTime: '01.04.2026 03:55 pm',
     status: 'EXITED',
-  },
-  {
-    id: '4',
-    vehicleNumber: 'tn541234',
-    vehicleType: 'Truck',
-    type: 'Deliver',
-    destination: 'Warehouse',
-    operator: 'Isaac',
-    goodDescription: 'Grain bags',
-    driver: 'Kumar',
-    driverPhoneNumber: '9876543213',
-    numberOfPersons: 2,
-    entryTime: '01.04.2026 03:12 pm',
-    status: 'EXITED',
+    createdBy: 1,
   },
 ];
 
-const TollContext = createContext<TollStore | null>(null);
+const initialStorageLocations: StorageLocation[] = [
+  { id: 1, unitType: 'Warehouse', floorName: 'Ground Floor', roomName: 'A', capacityInTonnes: 500, currentOccupancy: 210 },
+  { id: 2, unitType: 'Warehouse', floorName: 'First Floor', roomName: 'B', capacityInTonnes: 420, currentOccupancy: 130 },
+  { id: 3, unitType: 'Cold Storage', floorName: 'G + 2', roomName: 'Room 1', capacityInTonnes: 180, currentOccupancy: 88 },
+  { id: 4, unitType: 'Pack House', floorName: 'Pre-cooler', roomName: 'Room 1', capacityInTonnes: 90, currentOccupancy: 42 },
+  { id: 5, unitType: 'Processing Unit', floorName: 'Delta Millet Unit', roomName: 'Line 1', capacityInTonnes: 240, currentOccupancy: 120 },
+];
 
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
+function normalizeLogin(value: string) {
+  return value.trim().toLowerCase();
 }
 
 function formatIstDateTime(date: Date) {
@@ -120,47 +328,97 @@ function formatIstDateTime(date: Date) {
   return `${values.day}.${values.month}.${values.year} ${values.hour}:${values.minute} ${values.dayPeriod.toLowerCase()}`;
 }
 
+function nextId() {
+  return `${Date.now()}-${Math.round(Math.random() * 1000)}`;
+}
+
+function numberOrZero(value: number) {
+  return Number.isFinite(value) ? value : 0;
+}
+
 export function TollStoreProvider({ children }: PropsWithChildren) {
+  const [employees, setEmployees] = useState<Employee[]>(employeesSeed);
   const [entries, setEntries] = useState<TollEntry[]>(initialEntries);
-  const [currentUser, setCurrentUser] = useState('Customer');
-  const [users, setUsers] = useState<{ email: string; password: string }[]>([]);
+  const [weighbridgeRecords, setWeighbridgeRecords] = useState<WeighbridgeRecord[]>([]);
+  const [qualityInspections, setQualityInspections] = useState<QualityInspection[]>([]);
+  const [storageLocations] = useState<StorageLocation[]>(initialStorageLocations);
+  const [stockAssignments, setStockAssignments] = useState<StockAssignment[]>([]);
+  const [commodityMovements, setCommodityMovements] = useState<CommodityMovement[]>([]);
+  const [billingRecords, setBillingRecords] = useState<BillingRecord[]>([]);
+  const [cameraLogs, setCameraLogs] = useState<CameraLog[]>([]);
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | undefined>();
+  const [currentUser, setCurrentUser] = useState('Employee');
 
-  const registerUser = useCallback((email: string, password: string) => {
-    const normalizedEmail = normalizeEmail(email);
+  const registerUser = useCallback((email: string, password: string, role: EmployeeRole = 'security') => {
+    const normalizedEmail = normalizeLogin(email);
 
-    if (users.some((user) => user.email === normalizedEmail)) {
+    if (employees.some((employee) => employee.email === normalizedEmail || employee.userId === normalizedEmail)) {
       return false;
     }
 
-    setUsers((current) => [...current, { email: normalizedEmail, password }]);
+    const id = employees.length + 1;
+    const created: Employee = {
+      id,
+      empId: `EMP-${id.toString().padStart(3, '0')}`,
+      fullName: normalizedEmail.split('@')[0].replace(/[._-]+/g, ' '),
+      userId: normalizedEmail,
+      email: normalizedEmail,
+      mobile: `90000000${id.toString().padStart(2, '0')}`,
+      role,
+      department: 'Security Gate',
+      password,
+    };
+
+    setEmployees((current) => [...current, created]);
     return true;
-  }, [users]);
+  }, [employees]);
 
-  const loginUser = useCallback((email: string, password: string) => {
-    const normalizedEmail = normalizeEmail(email);
+  const loginUser = useCallback((userIdOrEmail: string, password: string) => {
+    const normalized = normalizeLogin(userIdOrEmail);
+    const employee = employees.find(
+      (item) => (item.userId === normalized || item.email === normalized || item.empId.toLowerCase() === normalized) && item.password === password,
+    );
 
-    return users.some((user) => user.email === normalizedEmail && user.password === password);
-  }, [users]);
+    if (!employee) {
+      return undefined;
+    }
+
+    setCurrentEmployee(employee);
+    setCurrentUser(employee.fullName);
+    return employee;
+  }, [employees]);
 
   const addEntry = useCallback((entry: NewTollEntry) => {
     const created: TollEntry = {
-      id: `${Date.now()}`,
+      id: nextId(),
       vehicleNumber: entry.vehicleNumber.trim().toLowerCase(),
       vehicleType: entry.vehicleType.trim() || 'Vehicle',
       type: entry.type.trim() || 'Delivery',
       destination: entry.destination.trim() || 'Packhouse',
       operator: entry.customerName.trim() || 'Customer',
       goodDescription: entry.goodDescription.trim() || 'Goods',
+      commodity: entry.commodity.trim() || entry.goodDescription.trim() || 'Commodity',
       driver: entry.driver.trim() || 'Driver',
       driverPhoneNumber: entry.driverPhoneNumber.trim(),
       numberOfPersons: entry.numberOfPersons,
       entryTime: formatIstDateTime(new Date()),
       status: 'IN PREMISES',
+      createdBy: currentEmployee?.id ?? 1,
     };
 
     setEntries((current) => [created, ...current]);
+    setCameraLogs((current) => [
+      {
+        id: nextId(),
+        vehicleId: created.id,
+        imageUrl: 'camera://entry-capture',
+        capturedAt: created.entryTime,
+        captureType: 'ENTRY',
+      },
+      ...current,
+    ]);
     return created;
-  }, []);
+  }, [currentEmployee?.id]);
 
   const findEntry = useCallback(
     (vehicleNumber: string) => {
@@ -170,40 +428,227 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
     [entries],
   );
 
-  const processExit = useCallback((vehicleNumber: string) => {
+  const addWeighbridgeRecord = useCallback((record: NewWeighbridgeRecord) => {
+    if (!currentEmployee) {
+      return undefined;
+    }
+
+    const loadedWeight = numberOrZero(record.loadedWeight);
+    const emptyWeight = numberOrZero(record.emptyWeight);
+    const created: WeighbridgeRecord = {
+      ...record,
+      id: nextId(),
+      loadedWeight,
+      emptyWeight,
+      netWeight: Math.max(loadedWeight - emptyWeight, 0),
+      createdAt: formatIstDateTime(new Date()),
+      verifiedBy: currentEmployee.id,
+    };
+
+    setWeighbridgeRecords((current) => [created, ...current]);
+    return created;
+  }, [currentEmployee]);
+
+  const addQualityInspection = useCallback((inspection: NewQualityInspection) => {
+    if (!currentEmployee) {
+      return undefined;
+    }
+
+    const created: QualityInspection = {
+      ...inspection,
+      id: nextId(),
+      inspectedAt: formatIstDateTime(new Date()),
+      inspectedBy: currentEmployee.id,
+    };
+
+    setQualityInspections((current) => [created, ...current]);
+    return created;
+  }, [currentEmployee]);
+
+  const addStockAssignment = useCallback((assignment: NewStockAssignment) => {
+    if (!currentEmployee) {
+      return undefined;
+    }
+
+    const bagCount = Math.max(numberOrZero(assignment.bagCount), 0);
+    const totalWeight = Math.max(numberOrZero(assignment.totalWeight), 0);
+    const created: StockAssignment = {
+      ...assignment,
+      id: nextId(),
+      bagCount,
+      totalWeight,
+      averageBagWeight: bagCount > 0 ? totalWeight / bagCount : 0,
+      assignedAt: formatIstDateTime(new Date()),
+      assignedBy: currentEmployee.id,
+    };
+
+    setStockAssignments((current) => [created, ...current]);
+    return created;
+  }, [currentEmployee]);
+
+  const addCommodityMovement = useCallback((movement: NewCommodityMovement) => {
+    if (!currentEmployee) {
+      return undefined;
+    }
+
+    const created: CommodityMovement = {
+      ...movement,
+      id: nextId(),
+      movementTime: formatIstDateTime(new Date()),
+      movedBy: currentEmployee.id,
+    };
+
+    setCommodityMovements((current) => [created, ...current]);
+    return created;
+  }, [currentEmployee]);
+
+  const generateExitBill = useCallback((vehicleNumber: string) => {
     const normalized = vehicleNumber.trim().toLowerCase();
+    const vehicle = entries.find((entry) => entry.vehicleNumber.toLowerCase() === normalized);
+
+    if (!vehicle || vehicle.status === 'EXITED') {
+      return undefined;
+    }
+
+    const existingBill = billingRecords.find((bill) => bill.vehicleId === vehicle.id && bill.status === 'UNPAID');
+
+    if (existingBill) {
+      return existingBill;
+    }
+
+    const weight = weighbridgeRecords.find((record) => record.vehicleId === vehicle.id)?.netWeight ?? 1;
+    const quantityInTonnes = Math.max(weight, 1);
+    const isStorage = vehicle.type.toLowerCase().includes('storage');
+    const loadingCharge = quantityInTonnes * 80;
+    const unloadingCharge = quantityInTonnes * 70;
+    const rentCharge = isStorage ? quantityInTonnes * 45 : 0;
+    const laborCharge = Math.max(vehicle.numberOfPersons, 1) * 120;
+    const created: BillingRecord = {
+      id: nextId(),
+      vehicleId: vehicle.id,
+      commodityType: vehicle.commodity,
+      quantityInTonnes,
+      loadingCharge,
+      unloadingCharge,
+      rentCharge,
+      laborCharge,
+      totalAmount: loadingCharge + unloadingCharge + rentCharge + laborCharge,
+      generatedAt: formatIstDateTime(new Date()),
+      generatedBy: currentEmployee?.id ?? 1,
+      status: 'UNPAID',
+    };
+
+    setBillingRecords((current) => [created, ...current]);
+    setEntries((current) =>
+      current.map((entry) => (entry.id === vehicle.id ? { ...entry, status: 'BILL GENERATED' } : entry)),
+    );
+    return created;
+  }, [billingRecords, currentEmployee?.id, entries, weighbridgeRecords]);
+
+  const markBillPaid = useCallback((billId: string) => {
+    const bill = billingRecords.find((item) => item.id === billId);
+
+    if (!bill) {
+      return undefined;
+    }
+
+    const exitTime = formatIstDateTime(new Date());
     let updatedEntry: TollEntry | undefined;
 
+    setBillingRecords((current) =>
+      current.map((item) =>
+        item.id === billId
+          ? { ...item, status: 'PAID', paidAt: exitTime, paidBy: currentEmployee?.id ?? 1 }
+          : item,
+      ),
+    );
     setEntries((current) =>
       current.map((entry) => {
-        if (entry.vehicleNumber.toLowerCase() !== normalized) {
+        if (entry.id !== bill.vehicleId) {
           return entry;
         }
 
-        updatedEntry = { ...entry, status: 'EXITED' };
+        updatedEntry = { ...entry, status: 'EXITED', exitTime };
         return updatedEntry;
       }),
     );
-
+    setCameraLogs((current) => [
+      {
+        id: nextId(),
+        vehicleId: bill.vehicleId,
+        imageUrl: 'camera://exit-capture',
+        capturedAt: exitTime,
+        captureType: 'EXIT',
+      },
+      ...current,
+    ]);
     return updatedEntry;
-  }, []);
+  }, [billingRecords, currentEmployee?.id]);
+
+  const canAccess = useCallback((module: AppModule) => {
+    if (!currentEmployee) {
+      return false;
+    }
+
+    return roleModules[currentEmployee.role].includes(module);
+  }, [currentEmployee]);
 
   const value = useMemo(
     () => ({
+      addCommodityMovement,
       addEntry,
+      addQualityInspection,
+      addStockAssignment,
+      addWeighbridgeRecord,
+      billingRecords,
+      cameraLogs,
+      canAccess,
+      commodityMovements,
+      currentEmployee,
       currentUser,
+      employees,
       entries,
       findEntry,
-      processExit,
-      setCurrentUser,
-      registerUser,
+      generateExitBill,
       loginUser,
+      markBillPaid,
+      qualityInspections,
+      registerUser,
+      setCurrentUser,
+      stockAssignments,
+      storageLocations,
+      weighbridgeRecords,
     }),
-    [addEntry, currentUser, entries, findEntry, processExit, registerUser, loginUser],
+    [
+      addCommodityMovement,
+      addEntry,
+      addQualityInspection,
+      addStockAssignment,
+      addWeighbridgeRecord,
+      billingRecords,
+      cameraLogs,
+      canAccess,
+      commodityMovements,
+      currentEmployee,
+      currentUser,
+      employees,
+      entries,
+      findEntry,
+      generateExitBill,
+      loginUser,
+      markBillPaid,
+      qualityInspections,
+      registerUser,
+      stockAssignments,
+      storageLocations,
+      weighbridgeRecords,
+    ],
   );
 
   return <TollContext.Provider value={value}>{children}</TollContext.Provider>;
 }
+
+const TollContext = createContext<TollStore | null>(null);
 
 export function useTollStore() {
   const value = useContext(TollContext);

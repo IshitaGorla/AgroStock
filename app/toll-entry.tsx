@@ -3,28 +3,51 @@ import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-nativ
 
 import { GradientButton } from '@/components/agro/gradient-button';
 import { Toast } from '@/components/agro/toast';
-import { useTollStore } from '@/components/agro/toll-store';
+import { AppModule, EmployeeRole, useTollStore } from '@/components/agro/toll-store';
 import { colors, teaLeafImage } from '@/constants/agro-stock';
 
+type Action = {
+  label: string;
+  route: '/vehicle-entry' | '/vehicle-exit' | '/entries' | '/weighbridge' | '/quality-inspection' | '/stock-manager' | '/admin';
+  module: AppModule;
+};
+
+const roleLabels: Record<EmployeeRole, string> = {
+  security: 'Security Officer',
+  quality_inspector: 'Quality Inspector',
+  weighbridge: 'Weighbridge',
+  admin: 'Admin',
+  stock_manager: 'Stock Manager',
+};
+
+const actions: Action[] = [
+  { label: 'Vehicle Entry', route: '/vehicle-entry', module: 'vehicle-entry' },
+  { label: 'Vehicle Exit & Billing', route: '/vehicle-exit', module: 'vehicle-exit' },
+  { label: 'Vehicle Table', route: '/entries', module: 'vehicles' },
+  { label: 'Weighbridge Records', route: '/weighbridge', module: 'weighbridge' },
+  { label: 'Quality Inspections', route: '/quality-inspection', module: 'quality' },
+  { label: 'Stock Management', route: '/stock-manager', module: 'stock' },
+  { label: 'Admin Tables', route: '/admin', module: 'admin' },
+];
+
 export default function TollEntryScreen() {
-  const { currentUser } = useTollStore();
+  const { canAccess, currentEmployee, currentUser } = useTollStore();
+  const visibleActions = actions.filter((action) => canAccess(action.module));
 
   return (
     <ImageBackground source={{ uri: teaLeafImage }} style={styles.background} resizeMode="cover">
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
-        <Text selectable={false} style={styles.title}>Toll Entry</Text>
+        <View style={styles.header}>
+          <Text selectable={false} style={styles.title}>AgroStock</Text>
+          <Text selectable style={styles.subtitle}>
+            {currentEmployee ? roleLabels[currentEmployee.role] : 'Employee'} dashboard
+          </Text>
+        </View>
+
         <View style={styles.actions}>
-          <GradientButton label="Vehicle Entry" onPress={() => router.push('/vehicle-entry')} />
-          <GradientButton label="Vehicle Exit" onPress={() => router.push('/vehicle-exit')} />
-          <GradientButton
-            label="Toll Entries"
-            onPress={() =>
-              router.push({
-                pathname: '/entries',
-                params: { returnLabel: 'Back to Toll Entry', returnTo: '/toll-entry' },
-              })
-            }
-          />
+          {visibleActions.map((action) => (
+            <GradientButton key={action.route} label={action.label} onPress={() => router.push(action.route as never)} />
+          ))}
         </View>
       </ScrollView>
       <Toast message={`Welcome ${currentUser}!`} />
@@ -34,8 +57,8 @@ export default function TollEntryScreen() {
 
 const styles = StyleSheet.create({
   actions: {
-    gap: 18,
-    width: '78%',
+    gap: 14,
+    width: '82%',
   },
   background: {
     flex: 1,
@@ -44,10 +67,20 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     flexGrow: 1,
-    gap: 110,
+    gap: 70,
     minHeight: 700,
     padding: 28,
     paddingTop: 74,
+  },
+  header: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  subtitle: {
+    color: colors.ink,
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: 0,
   },
   title: {
     color: colors.green,

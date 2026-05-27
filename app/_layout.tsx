@@ -20,6 +20,10 @@ export default function RootLayout() {
           <Stack.Screen name="vehicle-entry" />
           <Stack.Screen name="vehicle-exit" />
           <Stack.Screen name="entries" />
+          <Stack.Screen name="weighbridge" />
+          <Stack.Screen name="quality-inspection" />
+          <Stack.Screen name="stock-manager" />
+          <Stack.Screen name="admin" />
         </Stack>
         <StatusBar style="auto" />
       </TollStoreProvider>

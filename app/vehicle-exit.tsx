@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BrandHeader } from '@/components/agro/brand-header';
@@ -9,10 +9,18 @@ import { TollEntry, useTollStore } from '@/components/agro/toll-store';
 import { colors } from '@/constants/agro-stock';
 
 export default function VehicleExitScreen() {
-  const { findEntry, processExit } = useTollStore();
+  const { billingRecords, canAccess, findEntry, generateExitBill, markBillPaid } = useTollStore();
   const [vehicleNumber, setVehicleNumber] = useState('tn557890');
   const [selected, setSelected] = useState<TollEntry | undefined>();
   const [toast, setToast] = useState('');
+
+  const bill = selected ? billingRecords.find((record) => record.vehicleId === selected.id) : undefined;
+
+  useEffect(() => {
+    if (!canAccess('vehicle-exit')) {
+      router.replace('/toll-entry');
+    }
+  }, [canAccess]);
 
   const search = () => {
     const match = findEntry(vehicleNumber);
@@ -21,9 +29,22 @@ export default function VehicleExitScreen() {
   };
 
   const exit = () => {
-    const updated = processExit(selected?.vehicleNumber ?? vehicleNumber);
+    const generated = generateExitBill(selected?.vehicleNumber ?? vehicleNumber);
+    if (generated && selected) {
+      setSelected({ ...selected, status: 'BILL GENERATED' });
+    }
+    setToast(generated ? 'Bill generated. Collect payment before exit.' : 'Vehicle data not found or already exited.');
+  };
+
+  const paid = () => {
+    if (!bill) {
+      setToast('Generate a bill before marking paid.');
+      return;
+    }
+
+    const updated = markBillPaid(bill.id);
     setSelected(updated);
-    setToast(updated ? 'Vehicle exit processed successfully!' : 'Vehicle data not found');
+    setToast(updated ? 'Payment recorded. Vehicle can exit.' : 'Unable to update bill status.');
   };
 
   return (
@@ -57,12 +78,29 @@ export default function VehicleExitScreen() {
             <Text selectable style={styles.muted}>Driver: {selected.driver}</Text>
             <Text selectable style={styles.muted}>Driver Phone: {selected.driverPhoneNumber || 'Not provided'}</Text>
             <Text selectable style={styles.muted}>Persons: {selected.numberOfPersons}</Text>
+            <Text selectable style={styles.muted}>Commodity: {selected.commodity}</Text>
             <Text
               selectable
               style={[styles.status, selected.status === 'EXITED' ? styles.exited : styles.inPremises]}>
               Status: {selected.status}
             </Text>
-            <GradientButton label="Process Exit" disabled={selected.status === 'EXITED'} onPress={exit} />
+            <GradientButton label="Generate Exit Bill" disabled={selected.status === 'EXITED'} onPress={exit} />
+            {bill ? (
+              <View style={styles.bill}>
+                <Text selectable={false} style={styles.detailsTitle}>Billing</Text>
+                <Text selectable style={styles.detailText}>Commodity: {bill.commodityType}</Text>
+                <Text selectable style={styles.detailText}>Quantity: {bill.quantityInTonnes.toFixed(2)} MT</Text>
+                <Text selectable style={styles.detailText}>Loading: Rs. {bill.loadingCharge.toFixed(2)}</Text>
+                <Text selectable style={styles.detailText}>Unloading: Rs. {bill.unloadingCharge.toFixed(2)}</Text>
+                <Text selectable style={styles.detailText}>Rent: Rs. {bill.rentCharge.toFixed(2)}</Text>
+                <Text selectable style={styles.detailText}>Labor: Rs. {bill.laborCharge.toFixed(2)}</Text>
+                <Text selectable style={styles.total}>Total: Rs. {bill.totalAmount.toFixed(2)}</Text>
+                <Text selectable style={[styles.status, bill.status === 'PAID' ? styles.exited : styles.inPremises]}>
+                  Bill Status: {bill.status}
+                </Text>
+                <GradientButton label="Paid" disabled={bill.status === 'PAID'} onPress={paid} />
+              </View>
+            ) : null}
           </View>
         ) : (
           <View style={styles.emptySpace} />
@@ -108,6 +146,13 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 22,
     boxShadow: '0 3px 14px rgba(0, 0, 0, 0.14)',
+  },
+  bill: {
+    borderColor: colors.line,
+    borderRadius: 8,
+    borderWidth: 2,
+    gap: 10,
+    padding: 14,
   },
   detailsTitle: {
     color: colors.green,
@@ -160,6 +205,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0,
     textAlign: 'center',
+  },
+  total: {
+    color: colors.greenDark,
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 0,
   },
   footerActions: {
     alignItems: 'center',

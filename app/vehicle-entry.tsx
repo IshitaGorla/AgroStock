@@ -29,11 +29,12 @@ function formatIstDateTime(date: Date) {
 }
 
 export default function VehicleEntryScreen() {
-  const { addEntry } = useTollStore();
+  const { addEntry, canAccess } = useTollStore();
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [vehicleType, setVehicleType] = useState('Tractor');
   const [customerName, setCustomerName] = useState('');
   const [goodDescription, setGoodDescription] = useState('');
+  const [commodity, setCommodity] = useState('');
   const [driver, setDriver] = useState('');
   const [driverPhoneNumber, setDriverPhoneNumber] = useState('');
   const [numberOfPersons, setNumberOfPersons] = useState('');
@@ -41,6 +42,12 @@ export default function VehicleEntryScreen() {
   const [destination, setDestination] = useState('Warehouse');
   const [entryDateTime, setEntryDateTime] = useState(() => formatIstDateTime(new Date()));
   const [toast, setToast] = useState('');
+
+  useEffect(() => {
+    if (!canAccess('vehicle-entry')) {
+      router.replace('/toll-entry');
+    }
+  }, [canAccess]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -75,6 +82,7 @@ export default function VehicleEntryScreen() {
       destination,
       customerName,
       goodDescription,
+      commodity,
       driver,
       driverPhoneNumber,
       numberOfPersons: persons,
@@ -83,6 +91,7 @@ export default function VehicleEntryScreen() {
     setVehicleNumber('');
     setCustomerName('');
     setGoodDescription('');
+    setCommodity('');
     setDriver('');
     setDriverPhoneNumber('');
     setNumberOfPersons('');
@@ -131,6 +140,17 @@ export default function VehicleEntryScreen() {
               placeholderTextColor="#a8a8a8"
               style={[styles.input, styles.multilineInput]}
               value={goodDescription}
+            />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text selectable={false} style={styles.label}>Commodity</Text>
+            <TextInput
+              autoCapitalize="words"
+              onChangeText={setCommodity}
+              placeholder="Enter Commodity"
+              placeholderTextColor="#a8a8a8"
+              style={styles.input}
+              value={commodity}
             />
           </View>
           <View style={styles.fieldGroup}>
