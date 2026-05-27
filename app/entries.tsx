@@ -13,7 +13,7 @@ type ReturnRoute = '/toll-entry' | '/vehicle-entry' | '/vehicle-exit';
 const allowedReturnRoutes = new Set<ReturnRoute>(['/toll-entry', '/vehicle-entry', '/vehicle-exit']);
 
 export default function EntriesScreen() {
-  const { canAccess, entries } = useTollStore();
+  const { canAccess, currentEmployee, entries } = useTollStore();
   const params = useLocalSearchParams<{ returnLabel?: string; returnTo?: string }>();
   const [filter, setFilter] = useState<Filter>('All');
 
@@ -24,12 +24,16 @@ export default function EntriesScreen() {
   }, [canAccess]);
 
   const visibleEntries = useMemo(() => {
+    if (currentEmployee?.role === 'security') {
+      return entries.filter((entry) => entry.status !== 'EXITED');
+    }
+
     if (filter === 'All' || filter === 'My Entries') {
       return entries;
     }
 
     return entries.filter((entry) => entry.status === filter);
-  }, [entries, filter]);
+  }, [currentEmployee?.role, entries, filter]);
 
   if (!canAccess('vehicles')) {
     return null;
@@ -44,10 +48,13 @@ export default function EntriesScreen() {
     <View style={styles.screen}>
       <BrandHeader />
       <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
-        <Text selectable={false} style={styles.title}>Toll Entries</Text>
+        <Text selectable={false} style={styles.title}>
+          {currentEmployee?.role === 'security' ? 'Vehicles In Premises' : 'Vehicle Table'}
+        </Text>
 
-        <View style={styles.filters}>
-          {(['All', 'IN PREMISES', 'BILL GENERATED', 'My Entries'] as Filter[]).map((item) => (
+        {currentEmployee?.role === 'security' ? null : (
+          <View style={styles.filters}>
+            {(['All', 'IN PREMISES', 'BILL GENERATED', 'My Entries'] as Filter[]).map((item) => (
             <Pressable
               accessibilityRole="button"
               key={item}
@@ -57,8 +64,9 @@ export default function EntriesScreen() {
                 {item === 'IN PREMISES' ? 'In Premises' : item === 'BILL GENERATED' ? 'Bill' : item}
               </Text>
             </Pressable>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         <View style={styles.list}>
           {visibleEntries.map((entry) => (
@@ -91,6 +99,8 @@ function EntryCard({ entry }: { entry: TollEntry }) {
           <Text selectable style={styles.vehicleType}>{entry.vehicleType}</Text>
           <Text selectable style={styles.typeText}>{entry.type}</Text>
           <Text selectable style={styles.muted}>Operator: {entry.operator}</Text>
+          <Text selectable style={styles.muted}>Driver: {entry.driver}</Text>
+          <Text selectable style={styles.muted}>Phone: {entry.driverPhoneNumber || 'Not provided'}</Text>
         </View>
         <View style={styles.cardColumnRight}>
           <Text selectable style={styles.destination}>To: {entry.destination}</Text>

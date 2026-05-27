@@ -14,7 +14,7 @@ function toNumber(value: string) {
 }
 
 export default function WeighbridgeScreen() {
-  const { addWeighbridgeRecord, canAccess, entries, weighbridgeRecords } = useTollStore();
+  const { addWeighbridgeRecord, canAccess, entries } = useTollStore();
   const vehicles = useMemo(() => entries.map((entry) => entry.vehicleNumber), [entries]);
   const [vehicleNumber, setVehicleNumber] = useState(vehicles[0] ?? '');
   const [loadedWeight, setLoadedWeight] = useState('');
@@ -76,17 +76,7 @@ export default function WeighbridgeScreen() {
           <TextInput placeholder="Empty Weight (MT)" placeholderTextColor="#a8a8a8" style={styles.input} value={emptyWeight} onChangeText={setEmptyWeight} keyboardType="decimal-pad" />
           <GradientButton label="Save Weighment" onPress={save} />
         </View>
-
-        <View style={styles.list}>
-          {weighbridgeRecords.map((record) => (
-            <View key={record.id} style={styles.card}>
-              <Text selectable style={styles.cardTitle}>{record.transportReceiptNo}</Text>
-              <Text selectable style={styles.row}>Loaded: {record.loadedWeight.toFixed(2)} MT</Text>
-              <Text selectable style={styles.row}>Empty: {record.emptyWeight.toFixed(2)} MT</Text>
-              <Text selectable style={styles.total}>Net: {record.netWeight.toFixed(2)} MT</Text>
-            </View>
-          ))}
-        </View>
+        <GradientButton label="Open Weighbridge Table" onPress={() => router.push('/weighbridge-table' as never)} small fullWidth={false} />
         <GradientButton label="Back to Dashboard" onPress={() => router.navigate('/toll-entry')} small fullWidth={false} />
       </ScrollView>
       <Toast message={toast} />
@@ -95,14 +85,9 @@ export default function WeighbridgeScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.paper, borderRadius: 8, gap: 8, padding: 14, boxShadow: '0 3px 12px rgba(0, 0, 0, 0.14)' },
-  cardTitle: { color: colors.green, fontSize: 18, fontWeight: '900', letterSpacing: 0 },
   content: { flexGrow: 1, gap: 22, padding: 22, paddingBottom: 80, paddingTop: 30 },
   form: { gap: 14 },
   input: { borderColor: colors.green, borderRadius: 18, borderWidth: 3, color: colors.ink, fontSize: 16, minHeight: 50, paddingHorizontal: 14 },
-  list: { gap: 14 },
-  row: { color: colors.ink, fontSize: 14, fontWeight: '700', letterSpacing: 0 },
   screen: { backgroundColor: colors.paper, flex: 1 },
   title: { color: colors.ink, fontSize: 30, fontWeight: '900', letterSpacing: 0, textAlign: 'center' },
-  total: { color: colors.greenDark, fontSize: 16, fontWeight: '900', letterSpacing: 0 },
 });

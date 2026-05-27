@@ -21,8 +21,11 @@ export default function RootLayout() {
           <Stack.Screen name="vehicle-exit" />
           <Stack.Screen name="entries" />
           <Stack.Screen name="weighbridge" />
+          <Stack.Screen name="weighbridge-table" />
           <Stack.Screen name="quality-inspection" />
+          <Stack.Screen name="quality-table" />
           <Stack.Screen name="stock-manager" />
+          <Stack.Screen name="stock-table" />
           <Stack.Screen name="admin" />
         </Stack>
         <StatusBar style="auto" />

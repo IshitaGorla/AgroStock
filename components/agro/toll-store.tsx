@@ -9,6 +9,8 @@ export type Employee = {
   empId: string;
   fullName: string;
   userId: string;
+  aadhaarNumber: string;
+  panNumber: string;
   email: string;
   mobile: string;
   role: EmployeeRole;
@@ -145,6 +147,17 @@ type NewWeighbridgeRecord = Omit<WeighbridgeRecord, 'id' | 'createdAt' | 'verifi
 type NewQualityInspection = Omit<QualityInspection, 'id' | 'inspectedAt' | 'inspectedBy'>;
 type NewStockAssignment = Omit<StockAssignment, 'id' | 'assignedAt' | 'assignedBy' | 'averageBagWeight'>;
 type NewCommodityMovement = Omit<CommodityMovement, 'id' | 'movementTime' | 'movedBy'>;
+export type NewEmployee = {
+  fullName: string;
+  userId: string;
+  password: string;
+  aadhaarNumber: string;
+  panNumber: string;
+  email: string;
+  mobile: string;
+  role: EmployeeRole;
+  empId: string;
+};
 
 type TollStore = {
   employees: Employee[];
@@ -167,8 +180,9 @@ type TollStore = {
   generateExitBill: (vehicleNumber: string) => BillingRecord | undefined;
   markBillPaid: (billId: string) => TollEntry | undefined;
   setCurrentUser: (name: string) => void;
-  registerUser: (email: string, password: string, role?: EmployeeRole) => boolean;
+  registerUser: (employee: NewEmployee) => Employee | undefined;
   loginUser: (userIdOrEmail: string, password: string) => Employee | undefined;
+  logoutUser: () => void;
   canAccess: (module: AppModule) => boolean;
 };
 
@@ -178,16 +192,19 @@ export type AppModule =
   | 'vehicle-exit'
   | 'billing'
   | 'weighbridge'
+  | 'weighbridge-table'
   | 'quality'
+  | 'quality-table'
   | 'stock'
+  | 'stock-table'
   | 'admin';
 
 const roleModules: Record<EmployeeRole, AppModule[]> = {
   security: ['vehicles', 'vehicle-entry', 'vehicle-exit', 'billing'],
-  quality_inspector: ['vehicles', 'quality'],
-  weighbridge: ['vehicles', 'weighbridge'],
-  admin: ['vehicles', 'vehicle-entry', 'vehicle-exit', 'billing', 'weighbridge', 'quality', 'stock', 'admin'],
-  stock_manager: ['vehicles', 'stock'],
+  quality_inspector: ['vehicles', 'quality', 'quality-table'],
+  weighbridge: ['vehicles', 'weighbridge', 'weighbridge-table'],
+  admin: ['vehicles', 'vehicle-entry', 'vehicle-exit', 'billing', 'weighbridge', 'weighbridge-table', 'quality', 'quality-table', 'stock', 'stock-table', 'admin'],
+  stock_manager: ['vehicles', 'stock', 'stock-table'],
 };
 
 const employeesSeed: Employee[] = [
@@ -196,6 +213,8 @@ const employeesSeed: Employee[] = [
     empId: 'EMP-SEC-001',
     fullName: 'Security Officer',
     userId: 'security',
+    aadhaarNumber: '000000000001',
+    panNumber: 'SECUR0001A',
     email: 'security@agrostock.local',
     mobile: '9000000001',
     role: 'security',
@@ -207,6 +226,8 @@ const employeesSeed: Employee[] = [
     empId: 'EMP-QC-001',
     fullName: 'Quality Inspector',
     userId: 'quality',
+    aadhaarNumber: '000000000002',
+    panNumber: 'QUALI0002A',
     email: 'quality@agrostock.local',
     mobile: '9000000002',
     role: 'quality_inspector',
@@ -218,6 +239,8 @@ const employeesSeed: Employee[] = [
     empId: 'EMP-WB-001',
     fullName: 'Weighbridge Operator',
     userId: 'weighbridge',
+    aadhaarNumber: '000000000003',
+    panNumber: 'WEIGH0003A',
     email: 'weighbridge@agrostock.local',
     mobile: '9000000003',
     role: 'weighbridge',
@@ -229,6 +252,8 @@ const employeesSeed: Employee[] = [
     empId: 'EMP-ADM-001',
     fullName: 'Admin User',
     userId: 'admin',
+    aadhaarNumber: '000000000004',
+    panNumber: 'ADMIN0004A',
     email: 'admin@agrostock.local',
     mobile: '9000000004',
     role: 'admin',
@@ -240,6 +265,8 @@ const employeesSeed: Employee[] = [
     empId: 'EMP-STK-001',
     fullName: 'Stock Manager',
     userId: 'stock',
+    aadhaarNumber: '000000000005',
+    panNumber: 'STOCK0005A',
     email: 'stock@agrostock.local',
     mobile: '9000000005',
     role: 'stock_manager',
@@ -309,6 +336,70 @@ const initialStorageLocations: StorageLocation[] = [
   { id: 5, unitType: 'Processing Unit', floorName: 'Delta Millet Unit', roomName: 'Line 1', capacityInTonnes: 240, currentOccupancy: 120 },
 ];
 
+const initialQualityInspections: QualityInspection[] = [
+  {
+    id: 'qi-1',
+    vehicleId: '1',
+    moistureContent: 11.8,
+    foreignMatter: 0.6,
+    organicMatter: 0.4,
+    damagedGrains: 0.9,
+    weeviledGrains: 0.1,
+    fragments: 0.5,
+    shrivelledGrains: 0.7,
+    admixture: 0.3,
+    fumigation: true,
+    qcStatus: 'APPROVED',
+    remarks: 'Within acceptable limits.',
+    inspectedAt: '01.04.2026 03:45 pm',
+    inspectedBy: 2,
+  },
+  {
+    id: 'qi-2',
+    vehicleId: '2',
+    moistureContent: 16.2,
+    foreignMatter: 1.4,
+    organicMatter: 0.8,
+    damagedGrains: 2.1,
+    weeviledGrains: 0.5,
+    fragments: 1.2,
+    shrivelledGrains: 1.8,
+    admixture: 0.9,
+    fumigation: false,
+    qcStatus: 'REJECTED',
+    remarks: 'Moisture and damaged grains above limit.',
+    inspectedAt: '01.04.2026 03:36 pm',
+    inspectedBy: 2,
+  },
+];
+
+const initialStockAssignments: StockAssignment[] = [
+  {
+    id: 'sa-1',
+    vehicleId: '1',
+    storageLocationId: 4,
+    stackNumber: 'PK-12',
+    lotNumber: 'LOT-VEG-041',
+    bagCount: 125,
+    totalWeight: 18.5,
+    averageBagWeight: 0.148,
+    assignedAt: '01.04.2026 03:52 pm',
+    assignedBy: 5,
+  },
+  {
+    id: 'sa-2',
+    vehicleId: '2',
+    storageLocationId: 3,
+    stackNumber: 'CS-08',
+    lotNumber: 'LOT-DRY-022',
+    bagCount: 90,
+    totalWeight: 11.7,
+    averageBagWeight: 0.13,
+    assignedAt: '01.04.2026 03:40 pm',
+    assignedBy: 5,
+  },
+];
+
 function normalizeLogin(value: string) {
   return value.trim().toLowerCase();
 }
@@ -340,37 +431,55 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
   const [employees, setEmployees] = useState<Employee[]>(employeesSeed);
   const [entries, setEntries] = useState<TollEntry[]>(initialEntries);
   const [weighbridgeRecords, setWeighbridgeRecords] = useState<WeighbridgeRecord[]>([]);
-  const [qualityInspections, setQualityInspections] = useState<QualityInspection[]>([]);
+  const [qualityInspections, setQualityInspections] = useState<QualityInspection[]>(initialQualityInspections);
   const [storageLocations] = useState<StorageLocation[]>(initialStorageLocations);
-  const [stockAssignments, setStockAssignments] = useState<StockAssignment[]>([]);
+  const [stockAssignments, setStockAssignments] = useState<StockAssignment[]>(initialStockAssignments);
   const [commodityMovements, setCommodityMovements] = useState<CommodityMovement[]>([]);
   const [billingRecords, setBillingRecords] = useState<BillingRecord[]>([]);
   const [cameraLogs, setCameraLogs] = useState<CameraLog[]>([]);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | undefined>();
   const [currentUser, setCurrentUser] = useState('Employee');
 
-  const registerUser = useCallback((email: string, password: string, role: EmployeeRole = 'security') => {
-    const normalizedEmail = normalizeLogin(email);
+  const registerUser = useCallback((employee: NewEmployee) => {
+    const normalizedEmail = normalizeLogin(employee.email);
+    const normalizedUserId = normalizeLogin(employee.userId);
+    const normalizedEmpId = employee.empId.trim().toUpperCase();
+    const normalizedAadhaar = employee.aadhaarNumber.trim();
+    const normalizedPan = employee.panNumber.trim().toUpperCase();
 
-    if (employees.some((employee) => employee.email === normalizedEmail || employee.userId === normalizedEmail)) {
-      return false;
+    if (
+      employees.some(
+        (item) =>
+          item.email === normalizedEmail ||
+          item.userId === normalizedUserId ||
+          item.empId.toUpperCase() === normalizedEmpId ||
+          item.aadhaarNumber === normalizedAadhaar ||
+          item.panNumber.toUpperCase() === normalizedPan ||
+          item.mobile === employee.mobile.trim(),
+      )
+    ) {
+      return undefined;
     }
 
     const id = employees.length + 1;
     const created: Employee = {
       id,
-      empId: `EMP-${id.toString().padStart(3, '0')}`,
-      fullName: normalizedEmail.split('@')[0].replace(/[._-]+/g, ' '),
-      userId: normalizedEmail,
+      empId: normalizedEmpId,
+      fullName: employee.fullName.trim(),
+      userId: normalizedUserId,
+      aadhaarNumber: normalizedAadhaar,
+      panNumber: normalizedPan,
       email: normalizedEmail,
-      mobile: `90000000${id.toString().padStart(2, '0')}`,
-      role,
-      department: 'Security Gate',
-      password,
+      mobile: employee.mobile.trim(),
+      role: employee.role,
+      department: employee.role.replace('_', ' '),
+      password: employee.password,
     };
 
     setEmployees((current) => [...current, created]);
-    return true;
+    setCurrentEmployee(created);
+    setCurrentUser(created.fullName);
+    return created;
   }, [employees]);
 
   const loginUser = useCallback((userIdOrEmail: string, password: string) => {
@@ -387,6 +496,11 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
     setCurrentUser(employee.fullName);
     return employee;
   }, [employees]);
+
+  const logoutUser = useCallback(() => {
+    setCurrentEmployee(undefined);
+    setCurrentUser('Employee');
+  }, []);
 
   const addEntry = useCallback((entry: NewTollEntry) => {
     const created: TollEntry = {
@@ -611,6 +725,7 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       findEntry,
       generateExitBill,
       loginUser,
+      logoutUser,
       markBillPaid,
       qualityInspections,
       registerUser,
@@ -636,6 +751,7 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       findEntry,
       generateExitBill,
       loginUser,
+      logoutUser,
       markBillPaid,
       qualityInspections,
       registerUser,

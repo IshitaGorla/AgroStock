@@ -8,8 +8,8 @@ import { useTollStore } from '@/components/agro/toll-store';
 import { colors, vineHeroImage } from '@/constants/agro-stock';
 
 export default function SignIn() {
-  const { employees, loginUser } = useTollStore();
-  const [email, setEmail] = useState('security');
+  const { loginUser } = useTollStore();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [toast, setToast] = useState('');
 
@@ -67,17 +67,8 @@ export default function SignIn() {
           <GradientButton label="Login" onPress={login} />
         </View>
 
-        <View style={styles.credentials}>
-          <Text selectable={false} style={styles.credentialsTitle}>Demo role logins</Text>
-          {employees.map((employee) => (
-            <Text selectable key={employee.id} style={styles.credentialLine}>
-              {employee.userId} / {employee.password}
-            </Text>
-          ))}
-        </View>
-
         <View style={styles.linkRow}>
-          <Text selectable={false} style={styles.helper}>Need a gate account?</Text>
+          <Text selectable={false} style={styles.helper}>New employee?</Text>
           <Link href="/sign-up" asChild>
             <Pressable>
               <Text selectable={false} style={styles.link}>Register Now</Text>
@@ -140,27 +131,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-  },
-  credentialLine: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0,
-  },
-  credentials: {
-    alignSelf: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 8,
-    gap: 4,
-    padding: 12,
-    width: '100%',
-  },
-  credentialsTitle: {
-    color: colors.greenDark,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0,
-    textTransform: 'uppercase',
   },
   panel: {
     backgroundColor: 'rgba(255, 255, 255, 0.92)',

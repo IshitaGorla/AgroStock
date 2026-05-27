@@ -16,7 +16,7 @@ function toNumber(value: string) {
 }
 
 export default function QualityInspectionScreen() {
-  const { addQualityInspection, canAccess, entries, qualityInspections } = useTollStore();
+  const { addQualityInspection, canAccess, entries } = useTollStore();
   const vehicles = useMemo(() => entries.map((entry) => entry.vehicleNumber), [entries]);
   const [vehicleNumber, setVehicleNumber] = useState(vehicles[0] ?? '');
   const [qcStatus, setQcStatus] = useState('PENDING');
@@ -92,16 +92,7 @@ export default function QualityInspectionScreen() {
           <GradientButton label="Save Inspection" onPress={save} />
         </View>
 
-        <View style={styles.list}>
-          {qualityInspections.map((inspection) => (
-            <View key={inspection.id} style={styles.card}>
-              <Text selectable style={styles.cardTitle}>{inspection.qcStatus}</Text>
-              <Text selectable style={styles.row}>Moisture: {inspection.moistureContent.toFixed(2)}%</Text>
-              <Text selectable style={styles.row}>Foreign Matter: {inspection.foreignMatter.toFixed(2)}%</Text>
-              <Text selectable style={styles.row}>Remarks: {inspection.remarks || 'None'}</Text>
-            </View>
-          ))}
-        </View>
+        <GradientButton label="Open Quality Table" onPress={() => router.push('/quality-table' as never)} small fullWidth={false} />
         <GradientButton label="Back to Dashboard" onPress={() => router.navigate('/toll-entry')} small fullWidth={false} />
       </ScrollView>
       <Toast message={toast} />
@@ -110,14 +101,10 @@ export default function QualityInspectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.paper, borderRadius: 8, gap: 8, padding: 14, boxShadow: '0 3px 12px rgba(0, 0, 0, 0.14)' },
-  cardTitle: { color: colors.green, fontSize: 18, fontWeight: '900', letterSpacing: 0 },
   content: { flexGrow: 1, gap: 22, padding: 22, paddingBottom: 80, paddingTop: 30 },
   form: { gap: 14 },
   input: { borderColor: colors.green, borderRadius: 18, borderWidth: 3, color: colors.ink, fontSize: 16, minHeight: 50, paddingHorizontal: 14 },
-  list: { gap: 14 },
   multiline: { minHeight: 84, paddingVertical: 12, textAlignVertical: 'top' },
-  row: { color: colors.ink, fontSize: 14, fontWeight: '700', letterSpacing: 0 },
   screen: { backgroundColor: colors.paper, flex: 1 },
   title: { color: colors.ink, fontSize: 30, fontWeight: '900', letterSpacing: 0, textAlign: 'center' },
 });

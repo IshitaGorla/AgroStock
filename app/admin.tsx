@@ -69,6 +69,50 @@ export default function AdminScreen() {
             ))
           )}
         </View>
+
+        <View style={styles.card}>
+          <Text selectable={false} style={styles.cardTitle}>Employees</Text>
+          {employees.map((employee) => (
+            <Text selectable key={employee.id} style={styles.row}>
+              {employee.empId} / {employee.fullName} / {employee.role} / {employee.mobile}
+            </Text>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <Text selectable={false} style={styles.cardTitle}>Vehicles</Text>
+          {entries.map((entry) => (
+            <Text selectable key={entry.id} style={styles.row}>
+              {entry.vehicleNumber} / {entry.commodity} / {entry.status} / {entry.driver}
+            </Text>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <Text selectable={false} style={styles.cardTitle}>Quality Status</Text>
+          {entries.map((entry) => {
+            const inspection = qualityInspections.find((item) => item.vehicleId === entry.id);
+
+            return (
+              <Text selectable key={entry.id} style={styles.row}>
+                {entry.vehicleNumber} / {entry.commodity} / {inspection?.qcStatus ?? 'PENDING'}
+              </Text>
+            );
+          })}
+        </View>
+
+        <View style={styles.card}>
+          <Text selectable={false} style={styles.cardTitle}>Stock Status</Text>
+          {entries.map((entry) => {
+            const assignment = stockAssignments.find((item) => item.vehicleId === entry.id);
+
+            return (
+              <Text selectable key={entry.id} style={styles.row}>
+                {entry.vehicleNumber} / {assignment?.lotNumber ?? 'Not assigned'} / {assignment ? `${assignment.totalWeight.toFixed(2)} MT` : 'Pending'}
+              </Text>
+            );
+          })}
+        </View>
         <GradientButton label="Back to Dashboard" onPress={() => router.navigate('/toll-entry')} small fullWidth={false} />
       </ScrollView>
     </View>

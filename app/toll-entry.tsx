@@ -8,7 +8,17 @@ import { colors, teaLeafImage } from '@/constants/agro-stock';
 
 type Action = {
   label: string;
-  route: '/vehicle-entry' | '/vehicle-exit' | '/entries' | '/weighbridge' | '/quality-inspection' | '/stock-manager' | '/admin';
+  route:
+    | '/vehicle-entry'
+    | '/vehicle-exit'
+    | '/entries'
+    | '/weighbridge'
+    | '/weighbridge-table'
+    | '/quality-inspection'
+    | '/quality-table'
+    | '/stock-manager'
+    | '/stock-table'
+    | '/admin';
   module: AppModule;
 };
 
@@ -24,15 +34,23 @@ const actions: Action[] = [
   { label: 'Vehicle Entry', route: '/vehicle-entry', module: 'vehicle-entry' },
   { label: 'Vehicle Exit & Billing', route: '/vehicle-exit', module: 'vehicle-exit' },
   { label: 'Vehicle Table', route: '/entries', module: 'vehicles' },
-  { label: 'Weighbridge Records', route: '/weighbridge', module: 'weighbridge' },
-  { label: 'Quality Inspections', route: '/quality-inspection', module: 'quality' },
-  { label: 'Stock Management', route: '/stock-manager', module: 'stock' },
+  { label: 'Add Weighbridge Record', route: '/weighbridge', module: 'weighbridge' },
+  { label: 'Weighbridge Table', route: '/weighbridge-table', module: 'weighbridge-table' },
+  { label: 'Add Quality Inspection', route: '/quality-inspection', module: 'quality' },
+  { label: 'Quality Table', route: '/quality-table', module: 'quality-table' },
+  { label: 'Assign Stock', route: '/stock-manager', module: 'stock' },
+  { label: 'Stock Table', route: '/stock-table', module: 'stock-table' },
   { label: 'Admin Tables', route: '/admin', module: 'admin' },
 ];
 
 export default function TollEntryScreen() {
-  const { canAccess, currentEmployee, currentUser } = useTollStore();
+  const { canAccess, currentEmployee, currentUser, logoutUser } = useTollStore();
   const visibleActions = actions.filter((action) => canAccess(action.module));
+
+  const logout = () => {
+    logoutUser();
+    router.replace('/sign-in');
+  };
 
   return (
     <ImageBackground source={{ uri: teaLeafImage }} style={styles.background} resizeMode="cover">
@@ -48,6 +66,9 @@ export default function TollEntryScreen() {
           {visibleActions.map((action) => (
             <GradientButton key={action.route} label={action.label} onPress={() => router.push(action.route as never)} />
           ))}
+        </View>
+        <View style={styles.logout}>
+          <GradientButton label="Logout" onPress={logout} small fullWidth={false} />
         </View>
       </ScrollView>
       <Toast message={`Welcome ${currentUser}!`} />
@@ -67,10 +88,14 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     flexGrow: 1,
-    gap: 70,
+    gap: 44,
     minHeight: 700,
     padding: 28,
     paddingTop: 74,
+  },
+  logout: {
+    marginTop: 'auto',
+    paddingTop: 18,
   },
   header: {
     alignItems: 'center',

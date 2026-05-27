@@ -18,9 +18,7 @@ export default function StockManagerScreen() {
     addCommodityMovement,
     addStockAssignment,
     canAccess,
-    commodityMovements,
     entries,
-    stockAssignments,
     storageLocations,
   } = useTollStore();
   const vehicles = useMemo(() => entries.map((entry) => entry.vehicleNumber), [entries]);
@@ -107,21 +105,8 @@ export default function StockManagerScreen() {
               <Text selectable style={styles.row}>{location.currentOccupancy.toFixed(2)} of {location.capacityInTonnes.toFixed(2)} MT occupied</Text>
             </View>
           ))}
-          {stockAssignments.map((assignment) => (
-            <View key={assignment.id} style={styles.card}>
-              <Text selectable style={styles.cardTitle}>Lot {assignment.lotNumber}</Text>
-              <Text selectable style={styles.row}>Bags: {assignment.bagCount}</Text>
-              <Text selectable style={styles.row}>Average Bag Weight: {assignment.averageBagWeight.toFixed(2)} MT</Text>
-            </View>
-          ))}
-          {commodityMovements.map((movement) => (
-            <View key={movement.id} style={styles.card}>
-              <Text selectable style={styles.cardTitle}>Movement</Text>
-              <Text selectable style={styles.row}>From {movement.fromLocation} to {movement.toLocation}</Text>
-              <Text selectable style={styles.row}>{movement.remarks}</Text>
-            </View>
-          ))}
         </View>
+        <GradientButton label="Open Stock Table" onPress={() => router.push('/stock-table' as never)} small fullWidth={false} />
         <GradientButton label="Back to Dashboard" onPress={() => router.navigate('/toll-entry')} small fullWidth={false} />
       </ScrollView>
       <Toast message={toast} />
