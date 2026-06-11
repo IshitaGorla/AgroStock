@@ -39,7 +39,7 @@ export default function SignUp() {
   const [empId, setEmpId] = useState('');
   const [toast, setToast] = useState('');
 
-  const register = () => {
+  const register = async () => {
     const trimmed = {
       fullName: fullName.trim(),
       userId: userId.trim(),
@@ -77,7 +77,7 @@ export default function SignUp() {
       return;
     }
 
-    const registered = registerUser({
+    const registered = await registerUser({
       fullName: trimmed.fullName,
       userId: trimmed.userId,
       password: trimmed.password,

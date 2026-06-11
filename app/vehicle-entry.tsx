@@ -57,7 +57,7 @@ export default function VehicleEntryScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const recordEntry = () => {
+  const recordEntry = async () => {
     if (!vehicleNumber.trim()) {
       setToast('Please enter vehicle number');
       return;
@@ -75,7 +75,7 @@ export default function VehicleEntryScreen() {
       return;
     }
 
-    addEntry({
+    const saved = await addEntry({
       vehicleNumber,
       vehicleType,
       type,
@@ -87,6 +87,11 @@ export default function VehicleEntryScreen() {
       driverPhoneNumber,
       numberOfPersons: persons,
     });
+    if (!saved) {
+      setToast('Unable to record vehicle entry.');
+      return;
+    }
+
     setToast('Vehicle entry recorded successfully!');
     setVehicleNumber('');
     setCustomerName('');

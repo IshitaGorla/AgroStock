@@ -13,7 +13,7 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [toast, setToast] = useState('');
 
-  const login = () => {
+  const login = async () => {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
@@ -22,7 +22,7 @@ export default function SignIn() {
       return;
     }
 
-    const employee = loginUser(trimmedEmail, trimmedPassword);
+    const employee = await loginUser(trimmedEmail, trimmedPassword);
 
     if (!employee) {
       setToast('Invalid user ID/email or password.');

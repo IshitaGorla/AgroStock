@@ -42,13 +42,13 @@ export default function StockManagerScreen() {
   const fromLocation = Number.parseInt(locationLabel, 10);
   const toLocation = Number.parseInt(toLocationLabel, 10);
 
-  const assign = () => {
+  const assign = async () => {
     if (!selectedVehicle) {
       setToast('Select a valid vehicle.');
       return;
     }
 
-    const saved = addStockAssignment({
+    const saved = await addStockAssignment({
       vehicleId: selectedVehicle.id,
       storageLocationId: fromLocation,
       stackNumber: stackNumber.trim() || 'S-1',
@@ -60,13 +60,13 @@ export default function StockManagerScreen() {
     setToast(saved ? `Stock assigned. Avg bag weight ${saved.averageBagWeight.toFixed(2)} MT.` : 'Unable to assign stock.');
   };
 
-  const move = () => {
+  const move = async () => {
     if (!selectedVehicle) {
       setToast('Select a valid vehicle.');
       return;
     }
 
-    const saved = addCommodityMovement({
+    const saved = await addCommodityMovement({
       vehicleId: selectedVehicle.id,
       fromLocation,
       toLocation,

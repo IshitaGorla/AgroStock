@@ -28,21 +28,21 @@ export default function VehicleExitScreen() {
     setToast(match ? '' : 'Vehicle data not found');
   };
 
-  const exit = () => {
-    const generated = generateExitBill(selected?.vehicleNumber ?? vehicleNumber);
+  const exit = async () => {
+    const generated = await generateExitBill(selected?.vehicleNumber ?? vehicleNumber);
     if (generated && selected) {
       setSelected({ ...selected, status: 'BILL GENERATED' });
     }
     setToast(generated ? 'Bill generated. Collect payment before exit.' : 'Vehicle data not found or already exited.');
   };
 
-  const paid = () => {
+  const paid = async () => {
     if (!bill) {
       setToast('Generate a bill before marking paid.');
       return;
     }
 
-    const updated = markBillPaid(bill.id);
+    const updated = await markBillPaid(bill.id);
     setSelected(updated);
     setToast(updated ? 'Payment recorded. Vehicle can exit.' : 'Unable to update bill status.');
   };

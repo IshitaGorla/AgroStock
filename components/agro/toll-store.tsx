@@ -15,7 +15,7 @@ export type Employee = {
   mobile: string;
   role: EmployeeRole;
   department: string;
-  password: string;
+  password?: string;
 };
 
 export type TollEntry = {
@@ -171,17 +171,17 @@ type TollStore = {
   cameraLogs: CameraLog[];
   currentEmployee?: Employee;
   currentUser: string;
-  addEntry: (entry: NewTollEntry) => TollEntry;
-  addWeighbridgeRecord: (record: NewWeighbridgeRecord) => WeighbridgeRecord | undefined;
-  addQualityInspection: (inspection: NewQualityInspection) => QualityInspection | undefined;
-  addStockAssignment: (assignment: NewStockAssignment) => StockAssignment | undefined;
-  addCommodityMovement: (movement: NewCommodityMovement) => CommodityMovement | undefined;
+  addEntry: (entry: NewTollEntry) => Promise<TollEntry | undefined>;
+  addWeighbridgeRecord: (record: NewWeighbridgeRecord) => Promise<WeighbridgeRecord | undefined>;
+  addQualityInspection: (inspection: NewQualityInspection) => Promise<QualityInspection | undefined>;
+  addStockAssignment: (assignment: NewStockAssignment) => Promise<StockAssignment | undefined>;
+  addCommodityMovement: (movement: NewCommodityMovement) => Promise<CommodityMovement | undefined>;
   findEntry: (vehicleNumber: string) => TollEntry | undefined;
-  generateExitBill: (vehicleNumber: string) => BillingRecord | undefined;
-  markBillPaid: (billId: string) => TollEntry | undefined;
+  generateExitBill: (vehicleNumber: string) => Promise<BillingRecord | undefined>;
+  markBillPaid: (billId: string) => Promise<TollEntry | undefined>;
   setCurrentUser: (name: string) => void;
-  registerUser: (employee: NewEmployee) => Employee | undefined;
-  loginUser: (userIdOrEmail: string, password: string) => Employee | undefined;
+  registerUser: (employee: NewEmployee) => Promise<Employee | undefined>;
+  loginUser: (userIdOrEmail: string, password: string) => Promise<Employee | undefined>;
   logoutUser: () => void;
   canAccess: (module: AppModule) => boolean;
 };
@@ -206,6 +206,23 @@ const roleModules: Record<EmployeeRole, AppModule[]> = {
   admin: ['vehicles', 'vehicle-entry', 'vehicle-exit', 'billing', 'weighbridge', 'weighbridge-table', 'quality', 'quality-table', 'stock', 'stock-table', 'admin'],
   stock_manager: ['vehicles', 'stock', 'stock-table'],
 };
+
+async function apiRequest<T>(path: string, token: string | undefined, options: RequestInit = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error((await response.json().catch(() => ({}))).error ?? 'Request failed');
+  }
+
+  return response.json() as Promise<T>;
+}
 
 const employeesSeed: Employee[] = [
   {
@@ -432,77 +449,101 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
   const [entries, setEntries] = useState<TollEntry[]>(initialEntries);
   const [weighbridgeRecords, setWeighbridgeRecords] = useState<WeighbridgeRecord[]>([]);
   const [qualityInspections, setQualityInspections] = useState<QualityInspection[]>(initialQualityInspections);
-  const [storageLocations] = useState<StorageLocation[]>(initialStorageLocations);
+  const [storageLocations, setStorageLocations] = useState<StorageLocation[]>(initialStorageLocations);
   const [stockAssignments, setStockAssignments] = useState<StockAssignment[]>(initialStockAssignments);
   const [commodityMovements, setCommodityMovements] = useState<CommodityMovement[]>([]);
   const [billingRecords, setBillingRecords] = useState<BillingRecord[]>([]);
   const [cameraLogs, setCameraLogs] = useState<CameraLog[]>([]);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | undefined>();
   const [currentUser, setCurrentUser] = useState('Employee');
+  const [authToken, setAuthToken] = useState<string | undefined>();
 
-  const registerUser = useCallback((employee: NewEmployee) => {
+  const applySnapshot = useCallback((snapshot: Partial<Pick<TollStore, 'billingRecords' | 'cameraLogs' | 'commodityMovements' | 'employees' | 'entries' | 'qualityInspections' | 'stockAssignments' | 'storageLocations' | 'weighbridgeRecords'>>) => {
+    if (snapshot.billingRecords) setBillingRecords(snapshot.billingRecords);
+    if (snapshot.cameraLogs) setCameraLogs(snapshot.cameraLogs);
+    if (snapshot.commodityMovements) setCommodityMovements(snapshot.commodityMovements);
+    if (snapshot.employees) setEmployees(snapshot.employees as Employee[]);
+    if (snapshot.entries) setEntries(snapshot.entries);
+    if (snapshot.qualityInspections) setQualityInspections(snapshot.qualityInspections);
+    if (snapshot.stockAssignments) setStockAssignments(snapshot.stockAssignments);
+    if (snapshot.storageLocations?.length) setStorageLocations(snapshot.storageLocations);
+    if (snapshot.weighbridgeRecords) setWeighbridgeRecords(snapshot.weighbridgeRecords);
+  }, []);
+
+  const refreshSnapshot = useCallback(async (token: string) => {
+    const snapshot = await apiRequest<Partial<Pick<TollStore, 'billingRecords' | 'cameraLogs' | 'commodityMovements' | 'employees' | 'entries' | 'qualityInspections' | 'stockAssignments' | 'storageLocations' | 'weighbridgeRecords'>>>('/api/snapshot', token);
+    applySnapshot(snapshot);
+  }, [applySnapshot]);
+
+  const registerUser = useCallback(async (employee: NewEmployee) => {
     const normalizedEmail = normalizeLogin(employee.email);
     const normalizedUserId = normalizeLogin(employee.userId);
     const normalizedEmpId = employee.empId.trim().toUpperCase();
     const normalizedAadhaar = employee.aadhaarNumber.trim();
     const normalizedPan = employee.panNumber.trim().toUpperCase();
 
-    if (
-      employees.some(
-        (item) =>
-          item.email === normalizedEmail ||
-          item.userId === normalizedUserId ||
-          item.empId.toUpperCase() === normalizedEmpId ||
-          item.aadhaarNumber === normalizedAadhaar ||
-          item.panNumber.toUpperCase() === normalizedPan ||
-          item.mobile === employee.mobile.trim(),
-      )
-    ) {
+    if (!employee.password.trim()) {
       return undefined;
     }
 
-    const id = employees.length + 1;
-    const created: Employee = {
-      id,
-      empId: normalizedEmpId,
-      fullName: employee.fullName.trim(),
-      userId: normalizedUserId,
-      aadhaarNumber: normalizedAadhaar,
-      panNumber: normalizedPan,
-      email: normalizedEmail,
-      mobile: employee.mobile.trim(),
-      role: employee.role,
-      department: employee.role.replace('_', ' '),
-      password: employee.password,
-    };
+    try {
+      const result = await apiRequest<{ employee: Employee; token: string }>('/api/auth/register', undefined, {
+        body: JSON.stringify({
+          aadhaarNumber: normalizedAadhaar,
+          email: normalizedEmail,
+          empId: normalizedEmpId,
+          fullName: employee.fullName.trim(),
+          mobile: employee.mobile.trim(),
+          panNumber: normalizedPan,
+          password: employee.password,
+          role: employee.role,
+          userId: normalizedUserId,
+        }),
+        method: 'POST',
+      });
 
-    setEmployees((current) => [...current, created]);
-    setCurrentEmployee(created);
-    setCurrentUser(created.fullName);
-    return created;
-  }, [employees]);
+      setAuthToken(result.token);
+      setCurrentEmployee(result.employee);
+      setCurrentUser(result.employee.fullName);
+      await refreshSnapshot(result.token);
 
-  const loginUser = useCallback((userIdOrEmail: string, password: string) => {
+      return result.employee;
+    } catch {
+      return undefined;
+    }
+  }, [refreshSnapshot]);
+
+  const loginUser = useCallback(async (userIdOrEmail: string, password: string) => {
     const normalized = normalizeLogin(userIdOrEmail);
-    const employee = employees.find(
-      (item) => (item.userId === normalized || item.email === normalized || item.empId.toLowerCase() === normalized) && item.password === password,
-    );
 
-    if (!employee) {
+    try {
+      const result = await apiRequest<{ employee: Employee; token: string }>('/api/auth/login', undefined, {
+        body: JSON.stringify({ login: normalized, password }),
+        method: 'POST',
+      });
+
+      setAuthToken(result.token);
+      setCurrentEmployee(result.employee);
+      setCurrentUser(result.employee.fullName);
+      await refreshSnapshot(result.token);
+
+      return result.employee;
+    } catch {
       return undefined;
     }
-
-    setCurrentEmployee(employee);
-    setCurrentUser(employee.fullName);
-    return employee;
-  }, [employees]);
+  }, [refreshSnapshot]);
 
   const logoutUser = useCallback(() => {
+    setAuthToken(undefined);
     setCurrentEmployee(undefined);
     setCurrentUser('Employee');
   }, []);
 
-  const addEntry = useCallback((entry: NewTollEntry) => {
+  const addEntry = useCallback(async (entry: NewTollEntry) => {
+    if (!authToken) {
+      return undefined;
+    }
+
     const created: TollEntry = {
       id: nextId(),
       vehicleNumber: entry.vehicleNumber.trim().toLowerCase(),
@@ -520,19 +561,29 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       createdBy: currentEmployee?.id ?? 1,
     };
 
-    setEntries((current) => [created, ...current]);
-    setCameraLogs((current) => [
-      {
-        id: nextId(),
-        vehicleId: created.id,
-        imageUrl: 'camera://entry-capture',
-        capturedAt: created.entryTime,
-        captureType: 'ENTRY',
-      },
-      ...current,
-    ]);
-    return created;
-  }, [currentEmployee?.id]);
+    try {
+      const response = await apiRequest<{ row: { id: number } }>('/api/vehicles', authToken, {
+        body: JSON.stringify(entry),
+        method: 'POST',
+      });
+      const persisted = { ...created, id: String(response.row.id) };
+
+      setEntries((current) => [persisted, ...current]);
+      setCameraLogs((current) => [
+        {
+          id: nextId(),
+          vehicleId: persisted.id,
+          imageUrl: 'camera://entry-capture',
+          capturedAt: persisted.entryTime,
+          captureType: 'ENTRY',
+        },
+        ...current,
+      ]);
+      return persisted;
+    } catch {
+      return undefined;
+    }
+  }, [authToken, currentEmployee?.id]);
 
   const findEntry = useCallback(
     (vehicleNumber: string) => {
@@ -542,8 +593,8 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
     [entries],
   );
 
-  const addWeighbridgeRecord = useCallback((record: NewWeighbridgeRecord) => {
-    if (!currentEmployee) {
+  const addWeighbridgeRecord = useCallback(async (record: NewWeighbridgeRecord) => {
+    if (!authToken || !currentEmployee) {
       return undefined;
     }
 
@@ -559,12 +610,22 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       verifiedBy: currentEmployee.id,
     };
 
-    setWeighbridgeRecords((current) => [created, ...current]);
-    return created;
-  }, [currentEmployee]);
+    try {
+      const response = await apiRequest<{ row: { id: number } }>('/api/weighbridge-records', authToken, {
+        body: JSON.stringify(record),
+        method: 'POST',
+      });
+      const persisted = { ...created, id: String(response.row.id) };
 
-  const addQualityInspection = useCallback((inspection: NewQualityInspection) => {
-    if (!currentEmployee) {
+      setWeighbridgeRecords((current) => [persisted, ...current]);
+      return persisted;
+    } catch {
+      return undefined;
+    }
+  }, [authToken, currentEmployee]);
+
+  const addQualityInspection = useCallback(async (inspection: NewQualityInspection) => {
+    if (!authToken || !currentEmployee) {
       return undefined;
     }
 
@@ -575,12 +636,22 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       inspectedBy: currentEmployee.id,
     };
 
-    setQualityInspections((current) => [created, ...current]);
-    return created;
-  }, [currentEmployee]);
+    try {
+      const response = await apiRequest<{ row: { id: number } }>('/api/quality-inspections', authToken, {
+        body: JSON.stringify(inspection),
+        method: 'POST',
+      });
+      const persisted = { ...created, id: String(response.row.id) };
 
-  const addStockAssignment = useCallback((assignment: NewStockAssignment) => {
-    if (!currentEmployee) {
+      setQualityInspections((current) => [persisted, ...current]);
+      return persisted;
+    } catch {
+      return undefined;
+    }
+  }, [authToken, currentEmployee]);
+
+  const addStockAssignment = useCallback(async (assignment: NewStockAssignment) => {
+    if (!authToken || !currentEmployee) {
       return undefined;
     }
 
@@ -596,12 +667,22 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       assignedBy: currentEmployee.id,
     };
 
-    setStockAssignments((current) => [created, ...current]);
-    return created;
-  }, [currentEmployee]);
+    try {
+      const response = await apiRequest<{ row: { id: number } }>('/api/stock-assignments', authToken, {
+        body: JSON.stringify(assignment),
+        method: 'POST',
+      });
+      const persisted = { ...created, id: String(response.row.id) };
 
-  const addCommodityMovement = useCallback((movement: NewCommodityMovement) => {
-    if (!currentEmployee) {
+      setStockAssignments((current) => [persisted, ...current]);
+      return persisted;
+    } catch {
+      return undefined;
+    }
+  }, [authToken, currentEmployee]);
+
+  const addCommodityMovement = useCallback(async (movement: NewCommodityMovement) => {
+    if (!authToken || !currentEmployee) {
       return undefined;
     }
 
@@ -612,11 +693,25 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       movedBy: currentEmployee.id,
     };
 
-    setCommodityMovements((current) => [created, ...current]);
-    return created;
-  }, [currentEmployee]);
+    try {
+      const response = await apiRequest<{ row: { id: number } }>('/api/commodity-movements', authToken, {
+        body: JSON.stringify(movement),
+        method: 'POST',
+      });
+      const persisted = { ...created, id: String(response.row.id) };
 
-  const generateExitBill = useCallback((vehicleNumber: string) => {
+      setCommodityMovements((current) => [persisted, ...current]);
+      return persisted;
+    } catch {
+      return undefined;
+    }
+  }, [authToken, currentEmployee]);
+
+  const generateExitBill = useCallback(async (vehicleNumber: string) => {
+    if (!authToken) {
+      return undefined;
+    }
+
     const normalized = vehicleNumber.trim().toLowerCase();
     const vehicle = entries.find((entry) => entry.vehicleNumber.toLowerCase() === normalized);
 
@@ -652,14 +747,28 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
       status: 'UNPAID',
     };
 
-    setBillingRecords((current) => [created, ...current]);
-    setEntries((current) =>
-      current.map((entry) => (entry.id === vehicle.id ? { ...entry, status: 'BILL GENERATED' } : entry)),
-    );
-    return created;
-  }, [billingRecords, currentEmployee?.id, entries, weighbridgeRecords]);
+    try {
+      const response = await apiRequest<{ row: { id: number } }>('/api/billing/generate', authToken, {
+        body: JSON.stringify({ vehicleId: vehicle.id }),
+        method: 'POST',
+      });
+      const persisted = { ...created, id: String(response.row.id) };
 
-  const markBillPaid = useCallback((billId: string) => {
+      setBillingRecords((current) => [persisted, ...current]);
+      setEntries((current) =>
+        current.map((entry) => (entry.id === vehicle.id ? { ...entry, status: 'BILL GENERATED' } : entry)),
+      );
+      return persisted;
+    } catch {
+      return undefined;
+    }
+  }, [authToken, billingRecords, currentEmployee?.id, entries, weighbridgeRecords]);
+
+  const markBillPaid = useCallback(async (billId: string) => {
+    if (!authToken) {
+      return undefined;
+    }
+
     const bill = billingRecords.find((item) => item.id === billId);
 
     if (!bill) {
@@ -669,35 +778,44 @@ export function TollStoreProvider({ children }: PropsWithChildren) {
     const exitTime = formatIstDateTime(new Date());
     let updatedEntry: TollEntry | undefined;
 
-    setBillingRecords((current) =>
-      current.map((item) =>
-        item.id === billId
-          ? { ...item, status: 'PAID', paidAt: exitTime, paidBy: currentEmployee?.id ?? 1 }
-          : item,
-      ),
-    );
-    setEntries((current) =>
-      current.map((entry) => {
-        if (entry.id !== bill.vehicleId) {
-          return entry;
-        }
+    try {
+      await apiRequest('/api/billing/pay', authToken, {
+        body: JSON.stringify({ billId }),
+        method: 'POST',
+      });
 
-        updatedEntry = { ...entry, status: 'EXITED', exitTime };
-        return updatedEntry;
-      }),
-    );
-    setCameraLogs((current) => [
-      {
-        id: nextId(),
-        vehicleId: bill.vehicleId,
-        imageUrl: 'camera://exit-capture',
-        capturedAt: exitTime,
-        captureType: 'EXIT',
-      },
-      ...current,
-    ]);
-    return updatedEntry;
-  }, [billingRecords, currentEmployee?.id]);
+      setBillingRecords((current) =>
+        current.map((item) =>
+          item.id === billId
+            ? { ...item, status: 'PAID', paidAt: exitTime, paidBy: currentEmployee?.id ?? 1 }
+            : item,
+        ),
+      );
+      setEntries((current) =>
+        current.map((entry) => {
+          if (entry.id !== bill.vehicleId) {
+            return entry;
+          }
+
+          updatedEntry = { ...entry, status: 'EXITED', exitTime };
+          return updatedEntry;
+        }),
+      );
+      setCameraLogs((current) => [
+        {
+          id: nextId(),
+          vehicleId: bill.vehicleId,
+          imageUrl: 'camera://exit-capture',
+          capturedAt: exitTime,
+          captureType: 'EXIT',
+        },
+        ...current,
+      ]);
+      return updatedEntry;
+    } catch {
+      return undefined;
+    }
+  }, [authToken, billingRecords, currentEmployee?.id]);
 
   const canAccess = useCallback((module: AppModule) => {
     if (!currentEmployee) {

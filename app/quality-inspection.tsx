@@ -39,7 +39,7 @@ export default function QualityInspectionScreen() {
     }
   }, [canAccess]);
 
-  const save = () => {
+  const save = async () => {
     const vehicle = entries.find((entry) => entry.vehicleNumber === vehicleNumber);
 
     if (!vehicle) {
@@ -47,7 +47,7 @@ export default function QualityInspectionScreen() {
       return;
     }
 
-    const saved = addQualityInspection({
+    const saved = await addQualityInspection({
       vehicleId: vehicle.id,
       moistureContent: toNumber(values.moistureContent),
       foreignMatter: toNumber(values.foreignMatter),

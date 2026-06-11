@@ -30,7 +30,7 @@ export default function WeighbridgeScreen() {
     }
   }, [canAccess]);
 
-  const save = () => {
+  const save = async () => {
     const vehicle = entries.find((entry) => entry.vehicleNumber === vehicleNumber);
 
     if (!vehicle) {
@@ -38,7 +38,7 @@ export default function WeighbridgeScreen() {
       return;
     }
 
-    const saved = addWeighbridgeRecord({
+    const saved = await addWeighbridgeRecord({
       vehicleId: vehicle.id,
       transportReceiptNo: `TR-${Date.now()}`,
       companyName: companyName.trim() || 'Delta Agro',
